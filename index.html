@@ -1,0 +1,2816 @@
+<!doctype html>
+<html lang="pt-BR" class="h-full">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tracker — Gestão de Projetos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Outfit','ui-sans-serif','system-ui','sans-serif'],
+        display: ['"Instrument Serif"','ui-serif','Georgia','serif']
+      },
+      colors: {
+        paper:  "#F7F5EF",
+        surface:"#FFFFFF",
+        ink:    "#1A1916",
+        muted:  "#6B665D",
+        line:   "#E5DFD0",
+        accent: "#2D4A3E",
+        accent2:"#DCE6DD",
+        warn:   "#B45309",
+        danger: "#991B1B",
+        ok:     "#2D6A4F"
+      }
+    }
+  }
+};
+</script>
+
+<style>
+[x-cloak] { display: none !important; }
+html, body { background: #F7F5EF; }
+body { font-feature-settings: "ss01","cv11"; }
+
+/* Inputs minimalistas */
+.input, .select, .textarea {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #E5DFD0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #1A1916;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.input:focus, .select:focus, .textarea:focus {
+  outline: none;
+  border-color: #2D4A3E;
+  box-shadow: 0 0 0 3px rgba(45,74,62,.12);
+}
+.label { font-size: 12px; color: #6B665D; letter-spacing: .02em; text-transform: uppercase; margin-bottom: 6px; display:block; }
+
+/* Botões */
+.btn { display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:10px; font-size:14px; font-weight:500; transition: all .15s ease; cursor: pointer; border: 1px solid transparent; }
+.btn-primary { background: #1A1916; color: #fff; }
+.btn-primary:hover { background: #2D4A3E; }
+.btn-secondary { background: #fff; color:#1A1916; border-color: #E5DFD0; }
+.btn-secondary:hover { border-color: #1A1916; }
+.btn-ghost { color:#6B665D; }
+.btn-ghost:hover { color:#1A1916; background: rgba(0,0,0,.03); }
+.btn-danger { color:#991B1B; }
+.btn-danger:hover { background: #FEE2E2; }
+.btn:disabled { opacity:.5; cursor:not-allowed; }
+
+/* Sidebar nav item */
+.nav-item { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; color:#6B665D; font-size:14px; cursor:pointer; transition: all .15s ease; position:relative; }
+.nav-item:hover { background: rgba(0,0,0,.04); color:#1A1916; }
+.nav-item.active { background: #1A1916; color: #fff; }
+.nav-item.active:hover { background: #1A1916; }
+
+/* Cards de ação (Planner) */
+.action-card {
+  background: #fff;
+  border: 1px solid #ECE7DA;
+  border-radius: 10px;
+  padding: 12px 12px;
+  margin-bottom: 8px;
+  cursor: grab;
+  transition: box-shadow .12s ease, transform .12s ease, border-color .12s ease;
+}
+.action-card:hover { border-color: #1A1916; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.action-card.card-ghost { opacity: .35; }
+.action-card.card-chosen { box-shadow: 0 6px 20px rgba(0,0,0,.12); transform: rotate(.5deg); }
+
+/* Coluna projeto */
+.bucket {
+  width: 320px;
+  flex: 0 0 320px;
+  background: #FBFAF5;
+  border: 1px solid #ECE7DA;
+  border-radius: 14px;
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 180px);
+}
+
+/* Check circle (concluir ação) */
+.check-circle {
+  width: 18px; height: 18px;
+  border: 1.5px solid #C9C4B6;
+  border-radius: 50%;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+  cursor:pointer;
+  transition: all .15s ease;
+  background: #fff;
+}
+.check-circle:hover { border-color: #1A1916; }
+.check-circle.checked { background: #2D6A4F; border-color: #2D6A4F; color: #fff; }
+
+/* Avatar */
+.avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg,#2D4A3E,#52796F); color:#fff; font-size:11px; display:inline-flex; align-items:center; justify-content:center; font-weight:600; text-transform: uppercase; letter-spacing: .03em; flex-shrink:0; }
+.avatar.sm { width:20px; height:20px; font-size:9px; }
+.avatar.lg { width:36px; height:36px; font-size:13px; }
+
+/* Modal */
+.modal-bg { background: rgba(26,25,22,.45); backdrop-filter: blur(2px); }
+.modal-card { background: #fff; border-radius: 16px; box-shadow: 0 30px 60px rgba(0,0,0,.18); max-width: 600px; width: 100%; max-height: 92vh; overflow-y: auto; }
+
+/* Badges */
+.badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; padding: 3px 8px; border-radius: 999px; font-weight:500; letter-spacing:.02em; }
+.badge-todo  { background:#F3EFE3; color:#6B665D; }
+.badge-doing { background:#FEF3C7; color:#92400E; }
+.badge-done  { background:#DCE6DD; color:#2D6A4F; }
+.badge-warn  { background:#FEE2E2; color:#991B1B; }
+
+/* Scroll horizontal mais suave */
+.scroll-x { scrollbar-width: thin; }
+.scroll-x::-webkit-scrollbar { height: 8px; }
+.scroll-x::-webkit-scrollbar-thumb { background: #E5DFD0; border-radius: 999px; }
+
+/* Animação modal */
+.modal-enter { transition: opacity .15s ease, transform .15s ease; }
+
+/* Login art */
+.login-card { background:#fff; border:1px solid #E5DFD0; border-radius:18px; padding:40px; box-shadow: 0 1px 0 rgba(0,0,0,.02); }
+
+/* Toggle (checkbox custom) */
+.toggle { width:36px; height:20px; background:#E5DFD0; border-radius:999px; position:relative; cursor:pointer; transition: background .15s ease; }
+.toggle::after { content:""; position:absolute; left:2px; top:2px; width:16px; height:16px; background:#fff; border-radius:50%; transition: transform .15s ease; box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+.toggle.on { background:#2D4A3E; }
+.toggle.on::after { transform: translateX(16px); }
+
+/* Tabela usuários */
+.tbl { width:100%; border-collapse: collapse; }
+.tbl th { text-align:left; font-size:11px; color:#6B665D; text-transform:uppercase; letter-spacing:.05em; padding:10px 14px; border-bottom:1px solid #ECE7DA; font-weight:500; }
+.tbl td { padding: 14px; border-bottom:1px solid #F1ECDF; font-size:14px; }
+.tbl tr:hover td { background: #FBFAF5; }
+
+/* Dashed bucket */
+.bucket-empty { width:320px; flex:0 0 320px; border:2px dashed #D6CFBE; border-radius:14px; display:flex; align-items:center; justify-content:center; min-height: 180px; color:#9A9384; transition: all .15s ease; cursor:pointer; }
+.bucket-empty:hover { border-color:#1A1916; color:#1A1916; }
+
+/* Notification panel */
+.notif-panel { background:#fff; border:1px solid #E5DFD0; border-radius:14px; box-shadow: 0 20px 40px rgba(0,0,0,.12); }
+.notif-item { padding:14px; border-bottom:1px solid #F1ECDF; cursor:pointer; }
+.notif-item:hover { background:#FBFAF5; }
+.notif-item.unread { background: #FBF7E8; }
+
+/* Scrollbar geral suave */
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-thumb { background: #D6CFBE; border-radius: 999px; }
+
+/* Image preview */
+.img-thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 10px; border:1px solid #ECE7DA; }
+
+/* Anexos */
+.attach-row { display:flex; align-items:center; gap:10px; padding:8px 10px; background:#FBFAF5; border:1px solid #ECE7DA; border-radius:10px; }
+.attach-row:hover { border-color:#D6CFBE; }
+.attach-icon { flex-shrink:0; width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid #ECE7DA; border-radius:8px; color:#6B665D; overflow:hidden; }
+.attach-icon img { width:100%; height:100%; object-fit:cover; border-radius:7px; }
+.attach-name { flex:1; min-width:0; }
+.attach-name a { font-size:13px; color:#1A1916; font-weight:500; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.attach-name a:hover { text-decoration:underline; }
+.attach-meta { font-size:11px; color:#6B665D; }
+
+/* Cover image with overlay actions */
+.cover-wrap { position:relative; }
+.cover-actions { position:absolute; top:8px; right:8px; display:flex; gap:6px; opacity:0; transition: opacity .15s ease; }
+.cover-wrap:hover .cover-actions { opacity:1; }
+.cover-actions .btn { background: rgba(255,255,255,.92); backdrop-filter: blur(4px); padding:6px 8px; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+</style>
+
+<!-- Libs -->
+<script defer src="https://unpkg.com/alpinejs@3.13.10/dist/cdn.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+</head>
+
+<body class="h-full bg-paper text-ink antialiased font-sans" x-data="appData()" x-init="init()" x-cloak>
+
+<!-- =================================================================== -->
+<!-- LOGIN / SIGNUP                                                       -->
+<!-- =================================================================== -->
+<div x-show="!session" class="min-h-screen flex items-center justify-center px-4">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-8">
+      <div class="font-display text-5xl text-ink mb-2">
+        Tracker <span class="italic text-accent">·</span>
+      </div>
+      <p class="text-sm text-muted">Gestão de projetos minimalista</p>
+    </div>
+
+    <div class="login-card">
+      <h2 class="font-display text-2xl mb-1">Entrar</h2>
+      <p class="text-sm text-muted mb-6">Acesse com seu usuário ou e-mail</p>
+
+      <form @submit.prevent="doLogin()" class="space-y-3">
+        <div>
+          <label class="label">Usuário ou e-mail</label>
+          <input class="input" type="text" x-model.trim="auth.identifier" autocomplete="username" required>
+        </div>
+        <div>
+          <label class="label">Senha</label>
+          <input class="input" type="password" x-model="auth.password" autocomplete="current-password" required>
+        </div>
+        <p x-show="auth.err" class="text-sm text-danger" x-text="auth.err"></p>
+        <button class="btn btn-primary w-full justify-center" :disabled="auth.busy">
+          <span x-show="!auth.busy">Entrar</span>
+          <span x-show="auth.busy">Entrando…</span>
+        </button>
+        <p class="text-center text-xs text-muted pt-3 leading-relaxed">
+          Acesso restrito. Usuários são criados pelo administrador.
+        </p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- =================================================================== -->
+<!-- APP (logado)                                                         -->
+<!-- =================================================================== -->
+<div x-show="session && profile" class="min-h-screen flex">
+
+  <!-- =============== SIDEBAR =============== -->
+  <aside class="w-60 shrink-0 border-r border-line bg-paper flex flex-col">
+    <div class="px-5 py-6">
+      <div class="font-display text-2xl">Tracker <span class="italic text-accent">·</span></div>
+    </div>
+
+    <nav class="px-3 space-y-1 flex-1">
+      <div class="nav-item" :class="view==='board' && 'active'" @click="view='board'">
+        <span x-html="ICONS.grid"></span> Quadro
+      </div>
+      <div class="nav-item" :class="view==='dashboard' && 'active'" @click="view='dashboard'">
+        <span x-html="ICONS.chart"></span> Dashboard
+      </div>
+      <div class="nav-item" :class="view==='profile' && 'active'" @click="view='profile'">
+        <span x-html="ICONS.user"></span> Meu perfil
+      </div>
+      <template x-if="isAdmin">
+        <div>
+          <div class="nav-item" :class="view==='priority' && 'active'" @click="view='priority'">
+            <span x-html="ICONS.flag"></span> Prioridades
+          </div>
+          <div class="nav-item" :class="view==='users' && 'active'" @click="view='users'">
+            <span x-html="ICONS.users"></span> Usuários
+          </div>
+          <div class="nav-item" :class="view==='approvals' && 'active'" @click="view='approvals'">
+            <span x-html="ICONS.check2"></span> Homologações
+            <span x-show="pendingApprovals.length"
+                  class="ml-auto bg-warn text-white text-[10px] px-1.5 py-0.5 rounded-full"
+                  x-text="pendingApprovals.length"></span>
+          </div>
+          <div class="nav-item" :class="view==='logs' && 'active'" @click="view='logs'; loadLogs(false)">
+            <span x-html="ICONS.history"></span> Atividade
+          </div>
+          <div class="nav-item" :class="view==='vacations' && 'active'" @click="view='vacations'">
+            <span x-html="ICONS.calendar"></span> Férias & feriados
+          </div>
+        </div>
+      </template>
+    </nav>
+
+    <!-- Rodapé sidebar -->
+    <div class="border-t border-line p-3 relative">
+      <!-- Notificações -->
+      <button class="nav-item w-full" @click="showNotifs = !showNotifs">
+        <span x-html="ICONS.bell"></span> Notificações
+        <span x-show="unreadNotifs.length"
+              class="ml-auto bg-accent text-white text-[10px] px-1.5 py-0.5 rounded-full"
+              x-text="unreadNotifs.length"></span>
+      </button>
+
+      <!-- Painel de notificações -->
+      <div x-show="showNotifs" @click.outside="showNotifs=false"
+           class="notif-panel absolute left-3 right-3 bottom-20 z-30 max-h-96 overflow-auto" x-cloak>
+        <div class="px-4 py-3 border-b border-line flex items-center justify-between">
+          <span class="font-medium">Notificações</span>
+          <button class="text-xs text-muted hover:text-ink" @click="markAllRead()">Marcar todas lidas</button>
+        </div>
+        <template x-if="!notifications.length">
+          <div class="p-6 text-center text-sm text-muted">Sem notificações</div>
+        </template>
+        <template x-for="n in notifications" :key="n.id">
+          <div class="notif-item" :class="!n.read && 'unread'" @click="markRead(n)">
+            <div class="text-sm font-medium" x-text="n.title"></div>
+            <div class="text-xs text-muted mt-0.5" x-text="n.message"></div>
+            <div class="text-[10px] text-muted mt-1" x-text="new Date(n.created_at).toLocaleString('pt-BR')"></div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Avatar usuário -->
+      <div class="flex items-center gap-3 mt-2 px-2 py-2 rounded-lg hover:bg-black/[0.04] cursor-pointer relative" @click="showUserMenu=!showUserMenu">
+        <div class="avatar" x-text="(profile?.full_name || profile?.username || '?')[0]"></div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium truncate" x-text="profile?.full_name || profile?.username"></div>
+          <div class="text-xs text-muted" x-text="profile?.role === 'admin' ? 'Administrador' : 'Usuário'"></div>
+        </div>
+      </div>
+      <div x-show="showUserMenu" @click.outside="showUserMenu=false"
+           class="absolute left-3 right-3 bottom-3 z-30 notif-panel" x-cloak>
+        <button class="block w-full text-left px-4 py-3 text-sm hover:bg-paper" @click="showUserMenu=false; openChangePasswordModal()">Alterar senha</button>
+        <button class="block w-full text-left px-4 py-3 text-sm hover:bg-paper border-t border-line" @click="doLogout(); showUserMenu=false">Sair</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- =============== MAIN =============== -->
+  <main class="flex-1 flex flex-col min-w-0">
+
+    <!-- ============ BOARD VIEW ============ -->
+    <section x-show="view==='board'" class="flex-1 flex flex-col min-h-0">
+      <div class="flex items-center justify-between px-8 pt-7 pb-4">
+        <div>
+          <h1 class="font-display text-4xl text-ink leading-none">Quadro</h1>
+          <p class="text-sm text-muted mt-2" x-text="isAdmin ? 'Você vê todos os projetos e ações' : 'Você vê apenas o que está atribuído a você'"></p>
+        </div>
+        <div class="flex items-center gap-4">
+          <label class="flex items-center gap-2 text-sm text-muted cursor-pointer">
+            <span @click="showCompleted=!showCompleted" class="toggle" :class="showCompleted && 'on'"></span>
+            Mostrar concluídos
+          </label>
+          <button class="btn btn-primary" @click="openProjectModal()">
+            <span x-html="ICONS.plus"></span> Novo projeto
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-x-auto scroll-x px-8 pb-8 min-h-0">
+        <div class="flex items-stretch gap-4 h-full">
+          <template x-for="project in visibleProjects" :key="project.id">
+            <div class="bucket" :class="project.status==='completed' && 'opacity-60'">
+              <!-- Header bucket -->
+              <div class="px-4 pt-4 pb-3 border-b border-line">
+                <div class="flex items-start gap-2">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-medium text-accent" x-text="'#' + priorityOf(project.id)"></span>
+                      <h3 class="font-medium text-ink truncate" x-text="project.name"></h3>
+                      <span x-show="project.status==='completed'" class="badge badge-done">concluído</span>
+                    </div>
+                    <p class="text-xs text-muted mt-1" x-text="fmtDateRange(project.start_date, project.end_date)"></p>
+                  </div>
+                  <div class="relative" x-data="{open:false}">
+                    <button class="btn-ghost btn !p-1.5" @click="open=!open">
+                      <span x-html="ICONS.dots"></span>
+                    </button>
+                    <div x-show="open" @click.outside="open=false"
+                         class="absolute right-0 top-8 bg-white border border-line rounded-lg shadow-lg z-20 w-44 py-1" x-cloak>
+                      <button class="block w-full text-left px-3 py-2 text-sm hover:bg-paper" @click="open=false; openProjectModal(project.id)">Editar</button>
+                      <button class="block w-full text-left px-3 py-2 text-sm hover:bg-paper" @click="open=false; toggleProjectComplete(project)"
+                              x-text="project.status==='completed' ? 'Reativar' : (isAdmin ? 'Marcar concluído' : 'Solicitar conclusão')"></button>
+                      <button class="block w-full text-left px-3 py-2 text-sm hover:bg-paper text-danger" @click="open=false; deleteProjectAsk(project.id)">Excluir</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- imagem do projeto -->
+                <template x-if="project.image_url">
+                  <img :src="project.image_url" class="img-thumb mt-3">
+                </template>
+
+                <!-- responsável + contagem -->
+                <div class="flex items-center justify-between mt-3">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <template x-for="r in (project.project_responsibles||[])" :key="r.user_id">
+                      <div class="avatar sm" :title="profileById(r.user_id)?.full_name + ' (responsável)'"
+                           x-text="(profileById(r.user_id)?.full_name || '?')[0]"></div>
+                    </template>
+                    <template x-for="m in (project.project_members||[])" :key="m.user_id">
+                      <div class="avatar sm opacity-70" :title="profileById(m.user_id)?.full_name + ' (membro)'"
+                           x-text="(profileById(m.user_id)?.full_name || '?')[0]"></div>
+                    </template>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs text-muted">
+                    <template x-if="attachmentsOfProject(project.id).length">
+                      <span class="flex items-center gap-1" :title="attachmentsOfProject(project.id).length + ' anexo(s)'">
+                        <span x-html="ICONS.paperclip"></span>
+                        <span x-text="attachmentsOfProject(project.id).length"></span>
+                      </span>
+                    </template>
+                    <span x-text="actionsOf(project.id).length + ' ações'"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Lista de ações com Sortable -->
+              <div class="p-2 flex-1 overflow-y-auto"
+                   :data-project-id="project.id"
+                   x-init="$nextTick(() => initSortable($el, project.id))">
+                <template x-for="action in actionsOf(project.id)" :key="action.id">
+                  <div class="action-card" :data-action-id="action.id" @click="openActionModal(action.id)">
+                    <div class="flex items-start gap-2.5">
+                      <div class="check-circle mt-0.5" :class="action.status==='done' && 'checked'"
+                           @click.stop="toggleActionDone(action)">
+                        <template x-if="action.status==='done'"><span x-html="ICONS.checkSm"></span></template>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm leading-snug" :class="action.status==='done' && 'line-through text-muted'" x-text="action.title"></p>
+                        <div class="flex items-center gap-2 mt-2 flex-wrap">
+                          <template x-if="action.end_date">
+                            <span class="text-[11px]" :class="daysUntil(action.end_date) < 0 ? 'text-danger' : daysUntil(action.end_date) <= 3 ? 'text-warn' : 'text-muted'"
+                                  x-text="fmtDate(action.end_date)"></span>
+                          </template>
+                          <span x-show="action.status==='doing'" class="badge badge-doing">em andamento</span>
+                          <template x-if="action.responsible_id">
+                            <div class="avatar sm" :title="profileById(action.responsible_id)?.full_name"
+                                 x-text="(profileById(action.responsible_id)?.full_name || '?')[0]"></div>
+                          </template>
+                          <template x-if="action.image_url">
+                            <span class="text-muted" x-html="ICONS.image"></span>
+                          </template>
+                          <template x-if="attachmentsOfAction(action.id).length">
+                            <span class="text-muted text-[11px] flex items-center gap-0.5"
+                                  :title="attachmentsOfAction(action.id).length + ' anexo(s)'">
+                              <span x-html="ICONS.paperclip"></span>
+                              <span x-text="attachmentsOfAction(action.id).length"></span>
+                            </span>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <button class="m-2 btn btn-ghost justify-center text-sm" @click="openActionModal(null, project.id)">
+                <span x-html="ICONS.plus"></span> Nova ação
+              </button>
+            </div>
+          </template>
+
+          <div class="bucket-empty" @click="openProjectModal()">
+            <div class="flex items-center gap-2">
+              <span x-html="ICONS.plus"></span> Novo projeto
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PRIORITY VIEW ============ -->
+    <section x-show="view==='priority'" class="flex-1 overflow-y-auto px-8 py-7">
+      <div class="max-w-3xl">
+        <!-- Modo lista de projetos -->
+        <template x-if="!priorityProjectId">
+          <div>
+            <h1 class="font-display text-4xl mb-1">Prioridades</h1>
+            <p class="text-sm text-muted mb-6">Arraste para reordenar. <strong>#1</strong> é o mais importante. Clique em um projeto para priorizar suas ações.</p>
+
+            <template x-if="!projectsByPriority.length">
+              <div class="bg-white border border-line rounded-xl p-10 text-center text-muted">
+                Nenhum projeto cadastrado.
+              </div>
+            </template>
+
+            <div id="priority-list" class="space-y-2"
+                 x-init="$nextTick(() => initPrioritySortable($el))">
+              <template x-for="p in projectsByPriority" :key="p.id">
+                <div class="bg-white border border-line rounded-xl p-4 flex items-center gap-3 hover:border-ink transition"
+                     :data-project-id="p.id" :class="p.status==='completed' && 'opacity-50'">
+                  <span class="text-muted cursor-grab drag-handle" x-html="ICONS.drag"></span>
+                  <div class="font-display text-2xl text-accent w-12 text-center" x-text="'#' + (p.position || '?')"></div>
+                  <div class="flex-1 min-w-0 cursor-pointer" @click="priorityProjectId = p.id">
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium truncate" x-text="p.name"></span>
+                      <span x-show="p.status==='completed'" class="badge badge-done">concluído</span>
+                    </div>
+                    <div class="text-xs text-muted mt-0.5" x-text="fmtDateRange(p.start_date, p.end_date)"></div>
+                  </div>
+                  <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <template x-for="r in responsiblesOf(p.id)" :key="r.user_id">
+                      <div class="avatar sm" :title="profileById(r.user_id)?.full_name"
+                           x-text="(profileById(r.user_id)?.full_name || '?')[0]"></div>
+                    </template>
+                    <span class="text-xs text-muted" x-text="actionsOf(p.id).length + ' ações'"></span>
+                    <button class="btn btn-ghost !p-1.5 ml-1" @click="priorityProjectId = p.id" title="Ações deste projeto">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- Modo prioridade de ações de um projeto -->
+        <template x-if="priorityProjectId">
+          <div>
+            <button class="btn btn-ghost mb-4" @click="priorityProjectId = null">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
+              Voltar aos projetos
+            </button>
+            <h1 class="font-display text-4xl mb-1" x-text="projectById(priorityProjectId)?.name"></h1>
+            <p class="text-sm text-muted mb-6">Arraste as ações para reordenar a prioridade dentro deste projeto.</p>
+
+            <template x-if="!actionsOf(priorityProjectId).length">
+              <div class="bg-white border border-line rounded-xl p-10 text-center text-muted">
+                Nenhuma ação cadastrada neste projeto.
+              </div>
+            </template>
+
+            <div :id="'priority-actions-' + priorityProjectId" class="space-y-2"
+                 x-init="$nextTick(() => initPriorityActionsSortable($el, priorityProjectId))">
+              <template x-for="a in actionsOf(priorityProjectId)" :key="a.id">
+                <div class="bg-white border border-line rounded-xl p-4 flex items-center gap-3 hover:border-ink transition"
+                     :data-action-id="a.id" :class="a.status==='done' && 'opacity-50'">
+                  <span class="text-muted cursor-grab drag-handle" x-html="ICONS.drag"></span>
+                  <div class="font-display text-2xl text-accent w-12 text-center" x-text="'#' + (a.position || '?')"></div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium truncate" :class="a.status==='done' && 'line-through'" x-text="a.title"></span>
+                      <span x-show="a.status==='doing'" class="badge badge-doing">em andamento</span>
+                      <span x-show="a.status==='done'" class="badge badge-done">concluída</span>
+                    </div>
+                    <div class="text-xs text-muted mt-0.5" x-text="fmtDateRange(a.start_date, a.end_date)"></div>
+                  </div>
+                  <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <template x-if="a.responsible_id">
+                      <div class="avatar sm" :title="profileById(a.responsible_id)?.full_name"
+                           x-text="(profileById(a.responsible_id)?.full_name || '?')[0]"></div>
+                    </template>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+    </section>
+
+    <!-- ============ DASHBOARD VIEW ============ -->
+    <section x-show="view==='dashboard'" class="flex-1 overflow-y-auto px-8 py-7">
+      <h1 class="font-display text-4xl mb-1">Dashboard</h1>
+      <p class="text-sm text-muted mb-6" x-text="isAdmin ? 'Visão geral de projetos, prazos e equipe' : 'Seus projetos e ações em andamento'"></p>
+
+      <!-- KPIs -->
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-8" :class="isAdmin && 'lg:grid-cols-6'">
+        <div class="bg-white border border-line rounded-xl p-4">
+          <div class="text-xs text-muted" x-text="isAdmin ? 'Projetos' : 'Meus projetos'"></div>
+          <div class="font-display text-3xl mt-1" x-text="kpi.total"></div>
+        </div>
+        <div class="bg-white border border-line rounded-xl p-4">
+          <div class="text-xs text-muted">Concluídos</div>
+          <div class="font-display text-3xl mt-1" x-text="kpi.completed"></div>
+        </div>
+        <div class="bg-white border border-line rounded-xl p-4">
+          <div class="text-xs text-muted">Vencendo (7d)</div>
+          <div class="font-display text-3xl mt-1 text-warn" x-text="kpi.dueSoon"></div>
+        </div>
+        <div class="bg-white border border-line rounded-xl p-4">
+          <div class="text-xs text-muted" x-text="isAdmin ? 'Ações totais' : 'Minhas ações'"></div>
+          <div class="font-display text-3xl mt-1" x-text="kpi.actionsTotal"></div>
+        </div>
+        <div class="bg-white border border-line rounded-xl p-4">
+          <div class="text-xs text-muted">Ações concluídas</div>
+          <div class="font-display text-3xl mt-1 text-ok" x-text="kpi.actionsDone"></div>
+        </div>
+        <template x-if="isAdmin">
+          <div class="bg-white border border-line rounded-xl p-4 cursor-pointer hover:border-ink" @click="view='approvals'">
+            <div class="text-xs text-muted">Homologações</div>
+            <div class="font-display text-3xl mt-1" x-text="kpi.pendingApprovals"></div>
+          </div>
+        </template>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-5">
+        <!-- Projetos próximos do vencimento -->
+        <div class="bg-white border border-line rounded-xl p-5">
+          <h3 class="font-medium mb-4" x-text="isAdmin ? 'Projetos com prazo próximo' : 'Meus projetos com prazo próximo'"></h3>
+          <template x-if="!nearDeadlineProjects.length">
+            <p class="text-sm text-muted">Nenhum projeto vencendo nos próximos 14 dias.</p>
+          </template>
+          <template x-for="p in nearDeadlineProjects" :key="p.id">
+            <div class="flex items-center justify-between py-2 border-b border-line last:border-0 cursor-pointer hover:bg-paper -mx-2 px-2 rounded"
+                 @click="view='board'; setTimeout(()=>{}, 0)">
+              <div class="min-w-0">
+                <div class="text-sm font-medium truncate" x-text="p.name"></div>
+                <div class="text-xs text-muted" x-text="fmtDate(p.end_date)"></div>
+              </div>
+              <span class="badge" :class="daysUntil(p.end_date) <= 3 ? 'badge-warn' : 'badge-todo'"
+                    x-text="daysUntil(p.end_date) + ' dias'"></span>
+            </div>
+          </template>
+        </div>
+
+        <!-- Ações próximas do vencimento -->
+        <div class="bg-white border border-line rounded-xl p-5">
+          <h3 class="font-medium mb-4" x-text="isAdmin ? 'Ações vencendo (7 dias)' : 'Minhas ações vencendo (7 dias)'"></h3>
+          <template x-if="!nearDeadlineActions.length">
+            <p class="text-sm text-muted">Nenhuma ação urgente.</p>
+          </template>
+          <template x-for="a in nearDeadlineActions" :key="a.id">
+            <div class="flex items-center justify-between py-2 border-b border-line last:border-0 cursor-pointer hover:bg-paper -mx-2 px-2 rounded"
+                 @click="openActionModal(a.id)">
+              <div class="min-w-0">
+                <div class="text-sm font-medium truncate" x-text="a.title"></div>
+                <div class="text-xs text-muted" x-text="(projectById(a.project_id)?.name || '') + ' · ' + fmtDate(a.end_date)"></div>
+              </div>
+              <span class="badge" :class="daysUntil(a.end_date) < 0 ? 'badge-warn' : 'badge-todo'"
+                    x-text="daysUntil(a.end_date) + ' dias'"></span>
+            </div>
+          </template>
+        </div>
+
+        <!-- Equipe / em férias hoje -->
+        <div class="bg-white border border-line rounded-xl p-5 lg:col-span-2">
+          <h3 class="font-medium mb-4" x-text="isAdmin ? 'Equipe' : 'Minha equipe'"></h3>
+          <template x-if="!dashboardTeam.length">
+            <p class="text-sm text-muted">Nenhum colega envolvido nos seus projetos ainda.</p>
+          </template>
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <template x-for="u in dashboardTeam" :key="u.id">
+              <div class="flex items-center gap-3 p-3 rounded-lg border border-line">
+                <div class="avatar lg" x-text="(u.full_name||u.username||'?')[0]"></div>
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-medium truncate" x-text="u.full_name || u.username"></div>
+                  <div class="text-xs text-muted">
+                    <span x-text="u.role === 'admin' ? 'Admin' : 'Usuário'"></span>
+                    <span x-show="isOnVacation(u.id)" class="badge badge-warn ml-1">férias</span>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PROFILE VIEW ============ -->
+    <section x-show="view==='profile'" class="flex-1 overflow-y-auto px-8 py-7">
+      <div class="max-w-2xl">
+        <h1 class="font-display text-4xl mb-1">Meu perfil</h1>
+        <p class="text-sm text-muted mb-6">Suas credenciais de acesso e configurações de conta.</p>
+
+        <div class="bg-white border border-line rounded-xl p-6">
+          <div class="flex items-center gap-4 pb-5 border-b border-line">
+            <div class="avatar lg" x-text="(profile?.full_name || profile?.username || '?')[0]"></div>
+            <div>
+              <div class="font-medium text-lg" x-text="profile?.full_name || profile?.username"></div>
+              <div class="text-sm text-muted">
+                <span x-text="profile?.role === 'admin' ? 'Administrador' : 'Usuário'"></span>
+              </div>
+            </div>
+          </div>
+
+          <dl class="divide-y divide-line">
+            <div class="py-4 grid grid-cols-3 gap-4">
+              <dt class="label !mb-0">Nome completo</dt>
+              <dd class="col-span-2 text-sm" x-text="profile?.full_name || '—'"></dd>
+            </div>
+            <div class="py-4 grid grid-cols-3 gap-4">
+              <dt class="label !mb-0">Usuário (login)</dt>
+              <dd class="col-span-2 text-sm font-mono" x-text="profile?.username || '—'"></dd>
+            </div>
+            <div class="py-4 grid grid-cols-3 gap-4">
+              <dt class="label !mb-0">E-mail</dt>
+              <dd class="col-span-2 text-sm" x-text="profile?.email || '—'"></dd>
+            </div>
+            <div class="py-4 grid grid-cols-3 gap-4">
+              <dt class="label !mb-0">Papel</dt>
+              <dd class="col-span-2 text-sm" x-text="profile?.role === 'admin' ? 'Administrador (acesso total)' : 'Usuário (acesso aos seus projetos)'"></dd>
+            </div>
+            <div class="py-4 grid grid-cols-3 gap-4">
+              <dt class="label !mb-0">Conta criada em</dt>
+              <dd class="col-span-2 text-sm text-muted" x-text="profile?.created_at ? new Date(profile.created_at).toLocaleString('pt-BR') : '—'"></dd>
+            </div>
+          </dl>
+
+          <div class="border-t border-line pt-5 mt-2">
+            <p class="text-xs text-muted mb-3">Para alterar nome, e-mail ou usuário, peça a um administrador.</p>
+            <button class="btn btn-primary" @click="openChangePasswordModal()">
+              Alterar minha senha
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ USERS VIEW ============ -->
+    <section x-show="view==='users'" class="flex-1 overflow-y-auto px-8 py-7">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="font-display text-4xl">Usuários</h1>
+        <button class="btn btn-primary" @click="openUserModal()">
+          <span x-html="ICONS.plus"></span> Novo usuário
+        </button>
+      </div>
+      <div class="bg-white border border-line rounded-xl overflow-hidden">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Nome</th><th>Usuário</th><th>E-mail</th><th>Papel</th><th>Férias</th><th class="text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="u in profiles" :key="u.id">
+              <tr>
+                <td>
+                  <div class="flex items-center gap-3">
+                    <div class="avatar" x-text="(u.full_name||u.username||'?')[0]"></div>
+                    <span class="font-medium" x-text="u.full_name || '—'"></span>
+                  </div>
+                </td>
+                <td x-text="u.username"></td>
+                <td class="text-muted" x-text="u.email"></td>
+                <td>
+                  <span class="badge" :class="u.role==='admin' ? 'badge-done' : 'badge-todo'"
+                        x-text="u.role==='admin' ? 'Admin' : 'Usuário'"></span>
+                </td>
+                <td>
+                  <template x-if="vacationsOf(u.id).length">
+                    <span class="text-xs">
+                      <span x-text="vacationsOf(u.id).length + (vacationsOf(u.id).length > 1 ? ' períodos' : ' período')"></span>
+                      <span x-show="isOnVacation(u.id)" class="badge badge-warn ml-1">ativa</span>
+                    </span>
+                  </template>
+                  <template x-if="!vacationsOf(u.id).length">
+                    <span class="text-xs text-muted">—</span>
+                  </template>
+                </td>
+                <td class="text-right whitespace-nowrap">
+                  <button class="btn btn-ghost !py-1 !px-2 text-xs" @click="openVacationModal(u)">Férias</button>
+                  <button class="btn btn-ghost !py-1 !px-2 text-xs" @click="openUserModal(u.id)">Editar</button>
+                  <button class="btn btn-danger !py-1 !px-2 text-xs" @click="deleteUserAsk(u)" :disabled="u.id===profile.id">Excluir</button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ APPROVALS VIEW ============ -->
+    <section x-show="view==='approvals'" class="flex-1 overflow-y-auto px-8 py-7">
+      <h1 class="font-display text-4xl mb-1">Homologações</h1>
+      <p class="text-sm text-muted mb-6">Pedidos de inclusão, alteração e exclusão feitos por usuários</p>
+
+      <template x-if="!pendingApprovals.length">
+        <div class="bg-white border border-line rounded-xl p-10 text-center text-muted">
+          Nenhuma solicitação pendente.
+        </div>
+      </template>
+      <div class="space-y-3">
+        <template x-for="a in pendingApprovals" :key="a.id">
+          <div class="bg-white border border-line rounded-xl p-5">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="badge"
+                        :class="a.kind==='create' ? 'badge-done' : a.kind==='delete' ? 'badge-warn' : 'badge-doing'"
+                        x-text="a.kind==='create' ? 'Criar' : a.kind==='update' ? 'Alterar' : 'Excluir'"></span>
+                  <span class="text-sm font-medium" x-text="entityLabel(a.entity_type)"></span>
+                  <span class="text-xs text-muted" x-text="'· ' + (a.requester?.full_name || a.requester?.username || 'usuário')"></span>
+                  <span class="text-xs text-muted ml-auto" x-text="new Date(a.created_at).toLocaleString('pt-BR')"></span>
+                </div>
+
+                <!-- Resumo amigável conforme o tipo -->
+                <div class="mt-3 text-sm">
+                  <template x-if="a.entity_type==='attachment' && a.kind==='delete'">
+                    <div class="bg-paper border border-line rounded-lg p-3">
+                      <div class="font-medium" x-text="a.payload?.file_name || 'Arquivo'"></div>
+                      <div class="text-xs text-muted mt-1">
+                        Enviado por <strong x-text="profileById(a.payload?.uploaded_by)?.full_name || '—'"></strong>
+                        <template x-if="a.payload?.project_id">
+                          <span> · projeto: <strong x-text="projectById(a.payload?.project_id)?.name || '—'"></strong></span>
+                        </template>
+                        <template x-if="a.payload?.action_id">
+                          <span> · ação: <strong x-text="actionById(a.payload?.action_id)?.title || '—'"></strong></span>
+                        </template>
+                      </div>
+                      <a x-show="a.payload?.file_url" :href="a.payload?.file_url" target="_blank"
+                         class="text-xs text-accent hover:underline mt-1 inline-block">Abrir arquivo</a>
+                    </div>
+                  </template>
+                  <template x-if="a.entity_type==='cover_image' && a.kind==='delete'">
+                    <div class="bg-paper border border-line rounded-lg p-3">
+                      <div class="font-medium">Remover imagem de capa</div>
+                      <div class="text-xs text-muted mt-1">
+                        <template x-if="a.payload?.target_type==='project'">
+                          <span>Projeto: <strong x-text="projectById(a.payload?.target_id)?.name || '—'"></strong></span>
+                        </template>
+                        <template x-if="a.payload?.target_type==='action'">
+                          <span>Ação: <strong x-text="actionById(a.payload?.target_id)?.title || '—'"></strong></span>
+                        </template>
+                        <span> · Enviada por <strong x-text="profileById(a.payload?.uploaded_by)?.full_name || '—'"></strong></span>
+                      </div>
+                      <img x-show="a.payload?.image_url" :src="a.payload?.image_url" class="mt-2 max-w-xs rounded-lg border border-line">
+                    </div>
+                  </template>
+                  <template x-if="a.entity_type==='action_complete' && a.kind==='update'">
+                    <div class="bg-paper border border-line rounded-lg p-3">
+                      <div class="font-medium">Marcar ação como concluída</div>
+                      <div class="text-xs text-muted mt-1">
+                        Ação: <strong x-text="a.payload?.action_title || actionById(a.payload?.action_id)?.title || '—'"></strong>
+                        <span x-show="a.payload?.project_name"> · projeto: <strong x-text="a.payload.project_name"></strong></span>
+                      </div>
+                    </div>
+                  </template>
+                  <template x-if="a.entity_type==='project_complete' && a.kind==='update'">
+                    <div class="bg-paper border border-line rounded-lg p-3">
+                      <div class="font-medium">Marcar projeto como concluído</div>
+                      <div class="text-xs text-muted mt-1">
+                        Projeto: <strong x-text="a.payload?.project_name || projectById(a.payload?.project_id)?.name || '—'"></strong>
+                      </div>
+                    </div>
+                  </template>
+                  <template x-if="!['attachment','cover_image','action_complete','project_complete'].includes(a.entity_type)">
+                    <pre class="bg-paper border border-line rounded-lg p-3 text-xs text-ink overflow-auto max-h-48"
+                         x-text="JSON.stringify(a.payload, null, 2)"></pre>
+                  </template>
+                </div>
+              </div>
+              <div class="flex flex-col gap-2">
+                <button class="btn btn-primary" @click="approveRequest(a.id, 'approved')">Aprovar</button>
+                <button class="btn btn-secondary" @click="approveRequest(a.id, 'rejected')">Rejeitar</button>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </section>
+
+    <!-- ============ LOGS / ACTIVITY VIEW ============ -->
+    <section x-show="view==='logs'" class="flex-1 overflow-y-auto px-8 py-7">
+      <h1 class="font-display text-4xl mb-1">Atividade</h1>
+      <p class="text-sm text-muted mb-6">Histórico de ações dos usuários (criar, alterar, excluir, concluir, solicitar e homologar). Exclusivo para administradores.</p>
+
+      <!-- Filtros -->
+      <div class="bg-white border border-line rounded-xl p-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label class="label">Usuário</label>
+            <select class="select" x-model="logFilters.user_id" @change="loadLogs(false)">
+              <option value="">Todos</option>
+              <template x-for="u in profiles" :key="u.id">
+                <option :value="u.id" x-text="u.full_name + ' (@' + u.username + ')'"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="label">Tipo de ação</label>
+            <select class="select" x-model="logFilters.action_type" @change="loadLogs(false)">
+              <option value="">Todas</option>
+              <option value="project">Projetos</option>
+              <option value="action">Ações</option>
+              <option value="attachment">Anexos</option>
+              <option value="cover_image">Imagem de capa</option>
+              <option value="user">Usuários</option>
+              <option value="vacation">Férias</option>
+              <option value="holiday">Feriados</option>
+              <option value="approval">Homologações</option>
+              <option value="auth">Autenticação</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Data inicial</label>
+            <input class="input" type="date" x-model="logFilters.date_from" @change="loadLogs(false)">
+          </div>
+          <div>
+            <label class="label">Data final</label>
+            <input class="input" type="date" x-model="logFilters.date_to" @change="loadLogs(false)">
+          </div>
+        </div>
+        <div class="flex items-center justify-between mt-3 flex-wrap gap-2">
+          <div class="text-xs text-muted">
+            <span x-text="logs.length + ' registro(s)'"></span>
+            <span x-show="logsHasMore" class="text-warn ml-1">· (limite de 200 — refine os filtros para mais antigos)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="btn btn-ghost !py-1.5 text-xs" @click="clearLogFilters()">Limpar filtros</button>
+            <button class="btn btn-secondary !py-1.5 text-xs" @click="loadLogs(false)" :disabled="logsLoading">
+              <span x-show="!logsLoading">Atualizar</span>
+              <span x-show="logsLoading">Carregando…</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista de logs -->
+      <div class="bg-white border border-line rounded-xl overflow-hidden">
+        <template x-if="!logs.length && !logsLoading">
+          <div class="p-10 text-center text-muted">
+            <span x-show="!logFilters.user_id && !logFilters.action_type && !logFilters.date_from && !logFilters.date_to">Sem registros de atividade ainda.</span>
+            <span x-show="logFilters.user_id || logFilters.action_type || logFilters.date_from || logFilters.date_to">Nenhum registro corresponde aos filtros.</span>
+          </div>
+        </template>
+
+        <template x-for="(l, idx) in logs" :key="l.id">
+          <div class="px-5 py-3 border-b border-line last:border-0 flex items-start gap-3 hover:bg-paper">
+            <div class="avatar sm mt-0.5" x-text="(l.user_name || profileById(l.user_id)?.full_name || '?')[0]"></div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-baseline gap-2 flex-wrap">
+                <span class="text-sm font-medium" x-text="l.user_name || profileById(l.user_id)?.full_name || '(usuário removido)'"></span>
+                <span class="text-xs text-muted" x-text="actionGroupLabel(l.action)"></span>
+                <span class="badge badge-todo" x-text="l.action"></span>
+              </div>
+              <div class="text-sm text-ink mt-1" x-text="l.description"></div>
+              <div class="text-[11px] text-muted mt-1" x-text="new Date(l.created_at).toLocaleString('pt-BR')"></div>
+            </div>
+            <details x-show="l.metadata" class="text-xs">
+              <summary class="text-muted cursor-pointer">detalhes</summary>
+              <pre class="mt-1 bg-paper border border-line rounded p-2 text-[10px] max-w-xs overflow-auto"
+                   x-text="JSON.stringify(l.metadata, null, 2)"></pre>
+            </details>
+          </div>
+        </template>
+
+        <div x-show="logsHasMore && logs.length" class="p-3 text-center">
+          <button class="btn btn-ghost text-xs" @click="loadLogs(true)" :disabled="logsLoading">
+            <span x-show="!logsLoading">Carregar mais antigos</span>
+            <span x-show="logsLoading">Carregando…</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ VACATIONS / HOLIDAYS VIEW ============ -->
+    <section x-show="view==='vacations'" class="flex-1 overflow-y-auto px-8 py-7">
+      <h1 class="font-display text-4xl mb-6">Férias & feriados</h1>
+      <div class="grid lg:grid-cols-2 gap-5">
+
+        <!-- ===== CARD: FÉRIAS ===== -->
+        <div class="bg-white border border-line rounded-xl p-5">
+          <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h3 class="font-medium">Férias da equipe</h3>
+            <div class="flex items-center gap-1 text-xs">
+              <button class="px-2.5 py-1 rounded-md transition"
+                      :class="vacationView==='byUser' ? 'bg-ink text-white' : 'text-muted hover:text-ink'"
+                      @click="vacationView='byUser'">Por usuário</button>
+              <button class="px-2.5 py-1 rounded-md transition"
+                      :class="vacationView==='timeline' ? 'bg-ink text-white' : 'text-muted hover:text-ink'"
+                      @click="vacationView='timeline'">Linha do tempo</button>
+            </div>
+          </div>
+          <p class="text-xs text-muted mb-3">
+            Defina períodos pela tabela de Usuários. Períodos sobrepostos entre usuários distintos são marcados como
+            <span class="badge badge-warn">conflito</span>.
+          </p>
+
+          <!-- Visualização: Por usuário -->
+          <template x-if="vacationView==='byUser'">
+            <div class="max-h-[28rem] overflow-y-auto">
+              <template x-if="!vacationsByUser.length">
+                <p class="text-sm text-muted py-4">Ninguém com férias agendadas.</p>
+              </template>
+              <template x-for="g in vacationsByUser" :key="g.user.id">
+                <div class="mb-4 last:mb-0">
+                  <div class="flex items-center gap-2 mb-2">
+                    <div class="avatar sm" x-text="(g.user.full_name||g.user.username)[0]"></div>
+                    <span class="text-sm font-medium" x-text="g.user.full_name || g.user.username"></span>
+                    <span x-show="isOnVacation(g.user.id)" class="badge badge-warn ml-1">em férias</span>
+                  </div>
+                  <div class="space-y-1 pl-7">
+                    <template x-for="v in g.vacations" :key="v.id">
+                      <div class="flex items-center justify-between text-sm py-1.5 border-b border-line last:border-0 group">
+                        <div class="flex items-center gap-2">
+                          <span x-text="fmtDate(v.start_date) + ' → ' + fmtDate(v.end_date)"></span>
+                          <span x-show="vacationConflicts.has(v.id)" class="badge badge-warn">conflito</span>
+                        </div>
+                        <button class="btn-danger btn !p-1 opacity-0 group-hover:opacity-100" @click="deleteVacationAsk(v)" title="Excluir">
+                          <span x-html="ICONS.trash"></span>
+                        </button>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <!-- Visualização: Linha do tempo -->
+          <template x-if="vacationView==='timeline'">
+            <div class="max-h-[28rem] overflow-y-auto">
+              <template x-if="!vacationsTimeline.length">
+                <p class="text-sm text-muted py-4">Ninguém com férias agendadas.</p>
+              </template>
+              <template x-for="v in vacationsTimeline" :key="v.id">
+                <div class="flex items-center justify-between py-2 border-b border-line last:border-0 group"
+                     :class="vacationConflicts.has(v.id) && 'bg-red-50 -mx-2 px-2 rounded'">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="avatar sm" :title="profileById(v.user_id)?.full_name"
+                         x-text="(profileById(v.user_id)?.full_name||'?')[0]"></div>
+                    <div class="min-w-0">
+                      <div class="text-sm font-medium truncate" x-text="profileById(v.user_id)?.full_name || profileById(v.user_id)?.username || '—'"></div>
+                      <div class="text-xs text-muted" x-text="fmtDate(v.start_date) + ' → ' + fmtDate(v.end_date)"></div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span x-show="vacationConflicts.has(v.id)" class="badge badge-warn">conflito</span>
+                    <button class="btn-danger btn !p-1 opacity-0 group-hover:opacity-100" @click="deleteVacationAsk(v)" title="Excluir">
+                      <span x-html="ICONS.trash"></span>
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+
+        <!-- ===== CARD: FERIADOS ===== -->
+        <div class="bg-white border border-line rounded-xl p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-medium">Feriados</h3>
+            <template x-if="isAdmin">
+              <button class="btn btn-primary !py-1.5 !px-3 text-xs" @click="openHolidayModal()">
+                <span x-html="ICONS.plus"></span> Novo
+              </button>
+            </template>
+          </div>
+          <p class="text-xs text-muted mb-3">Feriados nacionais já são detectados automaticamente. Você pode adicionar feriados específicos do CONFEA ou regionais.</p>
+          <div class="max-h-[28rem] overflow-y-auto space-y-1">
+            <template x-if="!upcomingHolidays.length">
+              <p class="text-sm text-muted py-4">Nenhum feriado cadastrado.</p>
+            </template>
+            <template x-for="h in upcomingHolidays" :key="h.id || h.date">
+              <div class="flex items-center justify-between py-1.5 text-sm border-b border-line last:border-0 group">
+                <div class="min-w-0 flex-1">
+                  <span x-text="h.name"></span>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <span class="text-muted text-xs" x-text="fmtDate(h.date)"></span>
+                  <template x-if="isAdmin">
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button class="btn-ghost btn !p-1" @click="openHolidayModal(h)" title="Editar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                      </button>
+                      <button class="btn-danger btn !p-1" @click="deleteHolidayAsk(h)" title="Excluir">
+                        <span x-html="ICONS.trash"></span>
+                      </button>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- =================================================================== -->
+<!-- MODAIS                                                               -->
+<!-- =================================================================== -->
+
+<!-- Modal projeto -->
+<div x-show="modal && modal.type==='project'" x-cloak class="fixed inset-0 z-40 flex items-center justify-center p-4 modal-bg" @mousedown.self="modal=null">
+  <div class="modal-card">
+    <div class="px-6 py-5 border-b border-line flex items-center justify-between">
+      <h2 class="font-display text-2xl" x-text="modal?.editId ? 'Editar projeto' : 'Novo projeto'"></h2>
+      <button class="btn btn-ghost !p-1.5" @click="modal=null"><span x-html="ICONS.x"></span></button>
+    </div>
+    <form @submit.prevent="saveProject()" class="px-6 py-5 space-y-4">
+      <div>
+        <label class="label">Nome</label>
+        <input class="input" x-model.trim="pf.name" required>
+      </div>
+      <div>
+        <label class="label">Descrição</label>
+        <textarea class="textarea" rows="2" x-model="pf.description"></textarea>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">Início</label>
+          <input class="input" type="date" x-model="pf.start_date">
+        </div>
+        <div>
+          <label class="label">Fim</label>
+          <input class="input" type="date" x-model="pf.end_date">
+        </div>
+      </div>
+      <div>
+        <label class="label">Responsáveis (segure Ctrl/Cmd para selecionar vários)</label>
+        <select class="select" multiple size="4" x-model="pf.responsibles">
+          <template x-for="u in profiles" :key="u.id">
+            <option :value="u.id" x-text="u.full_name + ' (@' + u.username + ')'"></option>
+          </template>
+        </select>
+      </div>
+      <div>
+        <label class="label">Membros (segure Ctrl/Cmd para selecionar vários)</label>
+        <select class="select" multiple size="4" x-model="pf.members">
+          <template x-for="u in profiles" :key="u.id">
+            <option :value="u.id" x-text="u.full_name + ' (@' + u.username + ')'"></option>
+          </template>
+        </select>
+      </div>
+      <!-- Imagem de capa -->
+      <div>
+        <label class="label">Imagem de capa</label>
+        <template x-if="pf.image_url">
+          <div class="cover-wrap mb-2">
+            <img :src="pf.image_url" class="img-thumb">
+            <div class="cover-actions">
+              <button type="button" class="btn btn-danger" @click="removeCoverAsk('project')" title="Remover imagem">
+                <span x-html="ICONS.trash"></span>
+              </button>
+            </div>
+          </div>
+        </template>
+        <input class="input" type="file" accept="image/*" @change="onCoverImage($event, 'project')">
+        <p class="text-xs text-muted mt-1">Apenas imagens. Limite de 10 MB.</p>
+      </div>
+
+      <!-- Anexos múltiplos -->
+      <div>
+        <label class="label">Anexos</label>
+        <template x-if="!modal?.editId">
+          <p class="text-xs text-muted py-2">Salve o projeto primeiro para adicionar anexos.</p>
+        </template>
+        <template x-if="modal?.editId">
+          <div>
+            <div class="space-y-1.5 mb-3">
+              <template x-if="!attachmentsOfProject(modal.editId).length">
+                <p class="text-xs text-muted py-1">Nenhum anexo ainda.</p>
+              </template>
+              <template x-for="att in attachmentsOfProject(modal.editId)" :key="att.id">
+                <div class="attach-row group">
+                  <div class="attach-icon">
+                    <template x-if="att.file_type && att.file_type.startsWith('image/')">
+                      <img :src="att.file_url" alt="">
+                    </template>
+                    <template x-if="!att.file_type || !att.file_type.startsWith('image/')">
+                      <span x-html="iconForFile(att.file_type)"></span>
+                    </template>
+                  </div>
+                  <div class="attach-name">
+                    <a :href="att.file_url" target="_blank" rel="noopener" x-text="att.file_name"></a>
+                    <div class="attach-meta">
+                      <span x-text="fmtFileSize(att.file_size)"></span>
+                      <span> · </span>
+                      <span x-text="profileById(att.uploaded_by)?.full_name || '—'"></span>
+                      <template x-if="att.uploaded_by !== profile.id && !isAdmin">
+                        <span class="text-warn"> · precisa homologação para excluir</span>
+                      </template>
+                    </div>
+                  </div>
+                  <button type="button" class="btn-danger btn !p-1.5 opacity-0 group-hover:opacity-100"
+                          @click="deleteAttachmentAsk(att)" title="Excluir">
+                    <span x-html="ICONS.trash"></span>
+                  </button>
+                </div>
+              </template>
+            </div>
+            <input type="file" class="input" @change="onProjectAttachment($event)" :disabled="attachUploading">
+            <p class="text-xs text-muted mt-1">
+              <span x-show="!attachUploading">Qualquer tipo de arquivo. Limite de 10 MB por arquivo.</span>
+              <span x-show="attachUploading">Enviando…</span>
+            </p>
+          </div>
+        </template>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button type="button" class="btn btn-secondary" @click="modal=null">Cancelar</button>
+        <button class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal ação -->
+<div x-show="modal && modal.type==='action'" x-cloak class="fixed inset-0 z-40 flex items-center justify-center p-4 modal-bg" @mousedown.self="modal=null">
+  <div class="modal-card">
+    <div class="px-6 py-5 border-b border-line flex items-center justify-between">
+      <h2 class="font-display text-2xl" x-text="modal?.editId ? 'Editar ação' : 'Nova ação'"></h2>
+      <div class="flex items-center gap-1">
+        <button x-show="modal?.editId" class="btn btn-danger !p-1.5" @click="deleteActionAsk(modal.editId); modal=null">
+          <span x-html="ICONS.trash"></span>
+        </button>
+        <button class="btn btn-ghost !p-1.5" @click="modal=null"><span x-html="ICONS.x"></span></button>
+      </div>
+    </div>
+    <form @submit.prevent="saveAction()" class="px-6 py-5 space-y-4">
+      <div>
+        <label class="label">Projeto</label>
+        <select class="select" x-model="af.project_id" required>
+          <template x-for="p in projects" :key="p.id">
+            <option :value="p.id" x-text="p.name"></option>
+          </template>
+        </select>
+      </div>
+      <div>
+        <label class="label">Título</label>
+        <input class="input" x-model.trim="af.title" required>
+      </div>
+      <div>
+        <label class="label">Descrição</label>
+        <textarea class="textarea" rows="3" x-model="af.description"></textarea>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">Início</label>
+          <input class="input" type="date" x-model="af.start_date">
+        </div>
+        <div>
+          <label class="label">Fim</label>
+          <input class="input" type="date" x-model="af.end_date">
+        </div>
+      </div>
+      <p x-show="actionDeadlineHint" class="text-xs text-muted -mt-2" x-text="actionDeadlineHint"></p>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">Status</label>
+          <select class="select" x-model="af.status">
+            <option value="todo">Pendente</option>
+            <option value="doing">Em andamento</option>
+            <option value="done">Concluída</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Responsável</label>
+          <select class="select" x-model="af.responsible_id">
+            <option value="">—</option>
+            <template x-for="u in profiles" :key="u.id">
+              <option :value="u.id" x-text="u.full_name"></option>
+            </template>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="label">Atribuídos</label>
+        <select class="select" multiple size="4" x-model="af.assignees">
+          <template x-for="u in profiles" :key="u.id">
+            <option :value="u.id" x-text="u.full_name + ' (@' + u.username + ')'"></option>
+          </template>
+        </select>
+      </div>
+      <!-- Imagem de capa da ação -->
+      <div>
+        <label class="label">Imagem</label>
+        <template x-if="af.image_url">
+          <div class="cover-wrap mb-2">
+            <img :src="af.image_url" class="img-thumb">
+            <div class="cover-actions">
+              <button type="button" class="btn btn-danger" @click="removeCoverAsk('action')" title="Remover imagem">
+                <span x-html="ICONS.trash"></span>
+              </button>
+            </div>
+          </div>
+        </template>
+        <input class="input" type="file" accept="image/*" @change="onCoverImage($event, 'action')">
+        <p class="text-xs text-muted mt-1">Apenas imagens. Limite de 10 MB.</p>
+      </div>
+
+      <!-- Anexos da ação -->
+      <div>
+        <label class="label">Anexos</label>
+        <template x-if="!modal?.editId">
+          <p class="text-xs text-muted py-2">Salve a ação primeiro para adicionar anexos.</p>
+        </template>
+        <template x-if="modal?.editId">
+          <div>
+            <div class="space-y-1.5 mb-3">
+              <template x-if="!attachmentsOfAction(modal.editId).length">
+                <p class="text-xs text-muted py-1">Nenhum anexo ainda.</p>
+              </template>
+              <template x-for="att in attachmentsOfAction(modal.editId)" :key="att.id">
+                <div class="attach-row group">
+                  <div class="attach-icon">
+                    <template x-if="att.file_type && att.file_type.startsWith('image/')">
+                      <img :src="att.file_url" alt="">
+                    </template>
+                    <template x-if="!att.file_type || !att.file_type.startsWith('image/')">
+                      <span x-html="iconForFile(att.file_type)"></span>
+                    </template>
+                  </div>
+                  <div class="attach-name">
+                    <a :href="att.file_url" target="_blank" rel="noopener" x-text="att.file_name"></a>
+                    <div class="attach-meta">
+                      <span x-text="fmtFileSize(att.file_size)"></span>
+                      <span> · </span>
+                      <span x-text="profileById(att.uploaded_by)?.full_name || '—'"></span>
+                      <template x-if="att.uploaded_by !== profile.id && !isAdmin">
+                        <span class="text-warn"> · precisa homologação para excluir</span>
+                      </template>
+                    </div>
+                  </div>
+                  <button type="button" class="btn-danger btn !p-1.5 opacity-0 group-hover:opacity-100"
+                          @click="deleteAttachmentAsk(att)" title="Excluir">
+                    <span x-html="ICONS.trash"></span>
+                  </button>
+                </div>
+              </template>
+            </div>
+            <input type="file" class="input" @change="onActionAttachment($event)" :disabled="attachUploading">
+            <p class="text-xs text-muted mt-1">
+              <span x-show="!attachUploading">Qualquer tipo de arquivo. Limite de 10 MB por arquivo.</span>
+              <span x-show="attachUploading">Enviando…</span>
+            </p>
+          </div>
+        </template>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button type="button" class="btn btn-secondary" @click="modal=null">Cancelar</button>
+        <button class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal feriado -->
+<div x-show="modal && modal.type==='holiday'" x-cloak class="fixed inset-0 z-40 flex items-center justify-center p-4 modal-bg" @mousedown.self="modal=null">
+  <div class="modal-card !max-w-md">
+    <div class="px-6 py-5 border-b border-line flex items-center justify-between">
+      <h2 class="font-display text-2xl" x-text="modal?.editId ? 'Editar feriado' : 'Novo feriado'"></h2>
+      <button class="btn btn-ghost !p-1.5" @click="modal=null"><span x-html="ICONS.x"></span></button>
+    </div>
+    <form @submit.prevent="saveHoliday()" class="px-6 py-5 space-y-4">
+      <div>
+        <label class="label">Nome do feriado</label>
+        <input class="input" x-model.trim="hf.name" placeholder="Ex: Aniversário do CONFEA" required>
+      </div>
+      <div>
+        <label class="label">Data</label>
+        <input class="input" type="date" x-model="hf.date" required>
+      </div>
+      <p x-show="hf.err" class="text-sm text-danger" x-text="hf.err"></p>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button type="button" class="btn btn-secondary" @click="modal=null">Cancelar</button>
+        <button class="btn btn-primary" :disabled="hf.busy">
+          <span x-show="!hf.busy" x-text="modal?.editId ? 'Salvar' : 'Adicionar'"></span>
+          <span x-show="hf.busy">Aguarde…</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal usuário (criar/editar) -->
+<div x-show="modal && modal.type==='user'" x-cloak class="fixed inset-0 z-40 flex items-center justify-center p-4 modal-bg" @mousedown.self="modal=null">
+  <div class="modal-card !max-w-lg">
+    <div class="px-6 py-5 border-b border-line flex items-center justify-between">
+      <h2 class="font-display text-2xl" x-text="modal?.editId ? 'Editar usuário' : 'Novo usuário'"></h2>
+      <button class="btn btn-ghost !p-1.5" @click="modal=null"><span x-html="ICONS.x"></span></button>
+    </div>
+    <form @submit.prevent="saveUser()" class="px-6 py-5 space-y-4">
+      <div>
+        <label class="label">Nome completo</label>
+        <input class="input" x-model.trim="uf.full_name" required>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">Usuário (login)</label>
+          <input class="input" x-model.trim="uf.username" pattern="[a-zA-Z0-9_.\-]{3,30}" required>
+        </div>
+        <div>
+          <label class="label">Papel</label>
+          <select class="select" x-model="uf.role" :disabled="modal?.editId === profile.id">
+            <option value="user">Usuário</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="label">E-mail</label>
+        <input class="input" type="email" x-model.trim="uf.email" required>
+      </div>
+      <div>
+        <label class="label" x-text="modal?.editId ? 'Nova senha (deixe em branco para não alterar)' : 'Senha'"></label>
+        <input class="input" type="text" x-model="uf.password" :required="!modal?.editId" minlength="6" autocomplete="off">
+        <p class="text-xs text-muted mt-1" x-show="!modal?.editId">Mínimo 6 caracteres. Anote para repassar à pessoa.</p>
+      </div>
+      <p x-show="uf.err" class="text-sm text-danger" x-text="uf.err"></p>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button type="button" class="btn btn-secondary" @click="modal=null">Cancelar</button>
+        <button class="btn btn-primary" :disabled="uf.busy">
+          <span x-show="!uf.busy" x-text="modal?.editId ? 'Salvar' : 'Criar'"></span>
+          <span x-show="uf.busy">Aguarde…</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal férias -->
+<div x-show="modal && modal.type==='vacation'" x-cloak class="fixed inset-0 z-40 flex items-center justify-center p-4 modal-bg" @mousedown.self="modal=null">
+  <div class="modal-card !max-w-lg">
+    <div class="px-6 py-5 border-b border-line flex items-center justify-between">
+      <h2 class="font-display text-2xl">Férias</h2>
+      <button class="btn btn-ghost !p-1.5" @click="modal=null"><span x-html="ICONS.x"></span></button>
+    </div>
+    <div class="px-6 py-5 space-y-5">
+      <p class="text-sm text-muted">Períodos de férias de <strong x-text="vf.name"></strong>.</p>
+
+      <!-- Lista de férias atuais -->
+      <div>
+        <label class="label">Períodos cadastrados</label>
+        <template x-if="!vacationsOf(vf.userId).length">
+          <p class="text-sm text-muted py-2">Nenhum período cadastrado.</p>
+        </template>
+        <div class="space-y-1">
+          <template x-for="v in vacationsOf(vf.userId)" :key="v.id">
+            <div class="flex items-center justify-between text-sm py-2 px-3 bg-paper border border-line rounded-lg">
+              <div class="flex items-center gap-2">
+                <span x-text="fmtDate(v.start_date) + ' → ' + fmtDate(v.end_date)"></span>
+                <span x-show="vacationConflicts.has(v.id)" class="badge badge-warn">conflito</span>
+              </div>
+              <button class="btn-danger btn !p-1" @click="deleteVacationAsk(v)">
+                <span x-html="ICONS.trash"></span>
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Form novo período -->
+      <div class="border-t border-line pt-4">
+        <label class="label">Adicionar novo período</label>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-muted block mb-1">Início</label>
+            <input class="input" type="date" x-model="vf.start">
+          </div>
+          <div>
+            <label class="text-xs text-muted block mb-1">Fim</label>
+            <input class="input" type="date" x-model="vf.end">
+          </div>
+        </div>
+        <p x-show="vf.err" class="text-sm text-danger mt-2" x-text="vf.err"></p>
+        <button class="btn btn-primary mt-3 w-full justify-center" @click="addVacation()" :disabled="vf.busy">
+          <span x-show="!vf.busy"><span x-html="ICONS.plus"></span> Adicionar período</span>
+          <span x-show="vf.busy">Adicionando…</span>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-end pt-2">
+        <button class="btn btn-secondary" @click="modal=null">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal alterar senha (própria) -->
+<div x-show="modal && modal.type==='changePassword'" x-cloak class="fixed inset-0 z-40 flex items-center justify-center p-4 modal-bg" @mousedown.self="modal=null">
+  <div class="modal-card !max-w-md">
+    <div class="px-6 py-5 border-b border-line flex items-center justify-between">
+      <h2 class="font-display text-2xl">Alterar senha</h2>
+      <button class="btn btn-ghost !p-1.5" @click="modal=null"><span x-html="ICONS.x"></span></button>
+    </div>
+    <form @submit.prevent="changeMyPassword()" class="px-6 py-5 space-y-4">
+      <div>
+        <label class="label">Nova senha</label>
+        <input class="input" type="password" x-model="cpf.password" minlength="6" required autocomplete="new-password">
+      </div>
+      <div>
+        <label class="label">Confirmar nova senha</label>
+        <input class="input" type="password" x-model="cpf.confirm" minlength="6" required autocomplete="new-password">
+      </div>
+      <p class="text-xs text-muted">Mínimo 6 caracteres. Você precisará fazer login novamente após a troca.</p>
+      <p x-show="cpf.err" class="text-sm text-danger" x-text="cpf.err"></p>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button type="button" class="btn btn-secondary" @click="modal=null">Cancelar</button>
+        <button class="btn btn-primary" :disabled="cpf.busy">
+          <span x-show="!cpf.busy">Alterar</span>
+          <span x-show="cpf.busy">Alterando…</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- =================================================================== -->
+
+<!-- =================================================================== -->
+<!-- TOAST + CONFIRM                                                      -->
+<!-- =================================================================== -->
+<div x-show="toast" x-cloak x-transition.opacity
+     class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+  <div class="bg-ink text-white px-5 py-3 rounded-full shadow-lg text-sm flex items-center gap-2"
+       :class="toast?.type === 'error' && '!bg-danger'">
+    <span x-text="toast?.msg"></span>
+  </div>
+</div>
+
+<div x-show="confirmCfg" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
+  <div class="modal-card !max-w-sm">
+    <div class="p-6">
+      <h3 class="font-display text-2xl mb-2" x-text="confirmCfg?.title"></h3>
+      <p x-show="confirmCfg?.message" class="text-sm text-muted mb-5" x-text="confirmCfg?.message"></p>
+      <div class="flex items-center justify-end gap-2">
+        <button class="btn btn-secondary" @click="confirmCfg=null">Cancelar</button>
+        <button class="btn btn-primary" @click="(confirmCfg?.onYes||(()=>{}))(); confirmCfg=null">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================================================================== -->
+<!-- SCRIPT                                                               -->
+<!-- =================================================================== -->
+<script>
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+const ICONS = {
+  grid:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+  chart:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>',
+  users:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  check2:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+  calendar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  bell:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+  plus:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  x:       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  dots:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>',
+  checkSm: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>',
+  trash:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>',
+  image:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
+  flag:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+  drag:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>',
+  user:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  paperclip:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>',
+  file:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+  fileText:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+  fileSheet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="12" y1="13" x2="12" y2="21"/></svg>',
+  history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/><path d="M3 12a9 9 0 0 1 9-9"/></svg>'
+};
+window.ICONS = ICONS;
+
+function appData() {
+  return {
+    // ===== STATE =====
+    sb: null, session: null, profile: null,
+    profiles: [], projects: [], actions: [], notifications: [], approvals: [],
+    holidays: [],
+    vacations: [],
+    attachments: [],
+    logs: [],
+    logFilters: { user_id: '', action_type: '', date_from: '', date_to: '' },
+    logsLoading: false,
+    logsHasMore: true,
+    holidaysSet: new Set(),
+    view: 'board',
+    priorityProjectId: null,
+    vacationView: 'byUser',
+    showCompleted: false,
+    showNotifs: false,
+    showUserMenu: false,
+    attachUploading: false,
+    modal: null, toast: null, confirmCfg: null,
+    auth: { identifier:'', password:'', err:null, busy:false },
+    pf: {},
+    af: {},
+    vf: {},
+    uf: {},
+    hf: {},
+    cpf: {},
+
+    // ===== COMPUTED =====
+    get isAdmin() { return this.profile?.role === 'admin'; },
+    get pendingApprovals() { return this.approvals.filter(a => a.status === 'pending'); },
+    get unreadNotifs() { return this.notifications.filter(n => !n.read); },
+    get visibleProjects() {
+      let ps = [...this.projects];
+      if (!this.showCompleted) ps = ps.filter(p => p.status !== 'completed');
+      return ps.sort((a,b) => (a.position||0) - (b.position||0) || (a.created_at||'').localeCompare(b.created_at||''));
+    },
+    get projectsByPriority() {
+      return [...this.projects].sort((a,b) => (a.position||0) - (b.position||0) || (a.created_at||'').localeCompare(b.created_at||''));
+    },
+    priorityOf(projectId) {
+      return this.projectsByPriority.findIndex(p => p.id === projectId) + 1;
+    },
+    get upcomingHolidays() {
+      // Lista TODOS os feriados em ordem cronológica crescente
+      return [...this.holidays].sort((a,b) => a.date.localeCompare(b.date));
+    },
+    get vacationsTimeline() {
+      // Todas as férias ordenadas por data de início
+      return [...this.vacations].sort((a,b) => a.start_date.localeCompare(b.start_date));
+    },
+    get vacationsByUser() {
+      // Agrupa férias por usuário, cada grupo ordenado por data
+      const groups = [];
+      for (const u of [...this.profiles].sort((a,b) => (a.full_name||'').localeCompare(b.full_name||''))) {
+        const vs = this.vacations.filter(v => v.user_id === u.id)
+                                 .sort((a,b) => a.start_date.localeCompare(b.start_date));
+        if (vs.length) groups.push({ user: u, vacations: vs });
+      }
+      return groups;
+    },
+    get vacationConflicts() {
+      // Map<vacationId, Set<vacationId>> dos conflitos (períodos sobrepostos entre usuários distintos)
+      const conflicts = new Map();
+      const list = this.vacations;
+      for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+          const a = list[i], b = list[j];
+          if (a.user_id === b.user_id) continue;
+          if (a.start_date <= b.end_date && b.start_date <= a.end_date) {
+            if (!conflicts.has(a.id)) conflicts.set(a.id, new Set());
+            if (!conflicts.has(b.id)) conflicts.set(b.id, new Set());
+            conflicts.get(a.id).add(b.id);
+            conflicts.get(b.id).add(a.id);
+          }
+        }
+      }
+      return conflicts;
+    },
+    get kpi() {
+      const total = this.projects.length;
+      const completed = this.projects.filter(p=>p.status==='completed').length;
+      const dueSoon = this.projects.filter(p => p.end_date && p.status !== 'completed' && this.daysUntil(p.end_date) >= 0 && this.daysUntil(p.end_date) <= 7).length;
+      const actionsTotal = this.actions.length;
+      const actionsDone = this.actions.filter(a=>a.status==='done').length;
+      return { total, completed, dueSoon, actionsTotal, actionsDone, pendingApprovals: this.pendingApprovals.length };
+    },
+    get nearDeadlineProjects() {
+      return this.projects.filter(p => p.end_date && p.status !== 'completed' && this.daysUntil(p.end_date) >= 0 && this.daysUntil(p.end_date) <= 14)
+        .sort((a,b) => this.daysUntil(a.end_date) - this.daysUntil(b.end_date));
+    },
+    get nearDeadlineActions() {
+      return this.actions.filter(a => a.end_date && a.status !== 'done' && this.daysUntil(a.end_date) >= 0 && this.daysUntil(a.end_date) <= 7)
+        .sort((a,b) => this.daysUntil(a.end_date) - this.daysUntil(b.end_date));
+    },
+    get dashboardTeam() {
+      // Admin vê todos; usuário vê apenas colegas envolvidos nos projetos dele
+      if (this.isAdmin) return this.profiles;
+      const teammateIds = new Set();
+      for (const p of this.projects) {
+        if (p.responsible_id) teammateIds.add(p.responsible_id);
+        (p.project_responsibles || []).forEach(r => teammateIds.add(r.user_id));
+        (p.project_members || []).forEach(m => teammateIds.add(m.user_id));
+      }
+      for (const a of this.actions) {
+        if (a.responsible_id) teammateIds.add(a.responsible_id);
+        (a.action_assignees || []).forEach(x => teammateIds.add(x.user_id));
+      }
+      return this.profiles.filter(u => teammateIds.has(u.id));
+    },
+    get actionDeadlineHint() {
+      const proj = this.projectById(this.af.project_id);
+      if (!proj) return '';
+      const parts = [];
+      if (proj.start_date || proj.end_date) {
+        parts.push('Janela do projeto: ' + this.fmtDateRange(proj.start_date, proj.end_date) + '.');
+      }
+      if (this.af.end_date && this.holidaysSet.has(this.af.end_date)) {
+        parts.push('Atenção: o prazo final cai em feriado nacional.');
+      }
+      return parts.join(' ');
+    },
+
+    actionsOf(pid) { return this.actions.filter(a => a.project_id === pid).sort((x,y) => (x.position||0) - (y.position||0)); },
+    profileById(id) { return this.profiles.find(p => p.id === id); },
+    projectById(id) { return this.projects.find(p => p.id === id); },
+    actionById(id) { return this.actions.find(a => a.id === id); },
+    responsiblesOf(pid) {
+      const p = this.projectById(pid);
+      return (p?.project_responsibles || []);
+    },
+    attachmentsOfProject(pid) {
+      return this.attachments.filter(a => a.project_id === pid)
+        .sort((x,y) => (x.created_at||'').localeCompare(y.created_at||''));
+    },
+    attachmentsOfAction(aid) {
+      return this.attachments.filter(a => a.action_id === aid)
+        .sort((x,y) => (x.created_at||'').localeCompare(y.created_at||''));
+    },
+    entityLabel(t) {
+      return ({
+        project: 'Projeto',
+        action: 'Ação',
+        attachment: 'Anexo',
+        cover_image: 'Imagem de capa',
+        action_complete: 'Conclusão de ação',
+        project_complete: 'Conclusão de projeto'
+      })[t] || t;
+    },
+    iconForFile(mimeType) {
+      if (!mimeType) return ICONS.file;
+      if (mimeType.startsWith('image/')) return ICONS.image;
+      if (mimeType.includes('pdf')) return ICONS.fileText;
+      if (mimeType.includes('word') || mimeType.includes('document') || mimeType.includes('text/')) return ICONS.fileText;
+      if (mimeType.includes('sheet') || mimeType.includes('excel') || mimeType.includes('csv')) return ICONS.fileSheet;
+      return ICONS.file;
+    },
+    fmtFileSize(bytes) {
+      if (!bytes && bytes !== 0) return '';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes/1024).toFixed(1) + ' KB';
+      return (bytes/(1024*1024)).toFixed(1) + ' MB';
+    },
+
+    // ===== INIT =====
+    async init() {
+      this.sb = supabase.createClient("https://acjclzhdaxqnasntmgvq.supabase.co", "sb_publishable_4sfOn7-rpsL7UlUsDqk3Mw_1zpKJN0B");
+      const { data:{ session } } = await this.sb.auth.getSession();
+      this.session = session;
+      this.sb.auth.onAuthStateChange((_e, s) => {
+        const wasNull = !this.session;
+        this.session = s;
+        if (s && wasNull) this.afterLogin();
+        if (!s) { this.profile = null; this.projects = []; this.actions = []; this.notifications = []; this.approvals = []; this.attachments = []; this.logs = []; }
+      });
+      if (session) await this.afterLogin();
+    },
+
+    async afterLogin() {
+      await this.loadProfile();
+      if (!this.profile) return;
+      await this.loadAll();
+      this.subscribeRealtime();
+      this.refreshDashboard();
+    },
+
+    async loadProfile() {
+      const { data, error } = await this.sb.from('profiles').select('*').eq('id', this.session.user.id).maybeSingle();
+      if (error) { console.error(error); return; }
+      this.profile = data;
+    },
+
+    async loadAll() {
+      const queries = {
+        profiles:    this.sb.from('profiles').select('*').order('full_name',{ascending:true}),
+        projects:    this.sb.from('projects').select('*, project_members(user_id), project_responsibles(user_id)'),
+        actions:     this.sb.from('actions').select('*, action_assignees(user_id)'),
+        notifications: this.sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(50),
+        approvals:   this.sb.from('approval_requests')
+                       .select('*, requester:profiles!approval_requests_requester_id_fkey(full_name,username)')
+                       .eq('status','pending').order('created_at',{ascending:false}),
+        holidays:    this.sb.from('holidays').select('id,date,name').order('date',{ascending:true}),
+        vacations:   this.sb.from('vacations').select('*').order('start_date',{ascending:true}),
+        attachments: this.sb.from('attachments').select('*').order('created_at',{ascending:true}),
+      };
+      const keys = Object.keys(queries);
+      const results = await Promise.allSettled(Object.values(queries));
+      results.forEach((r, idx) => {
+        const key = keys[idx];
+        if (r.status === 'fulfilled' && !r.value.error) {
+          this[key] = r.value.data || [];
+        } else {
+          const err = r.reason || r.value?.error;
+          console.error(`Falha ao carregar ${key}:`, err);
+          this.toastShow(`Erro em ${key}: ${err?.message || 'desconhecido'}`,'error');
+        }
+      });
+      this.holidaysSet = new Set(this.holidays.map(h => h.date));
+    },
+
+    subscribeRealtime() {
+      this.sb.channel('rt:'+this.profile.id)
+        .on('postgres_changes', { event:'INSERT', schema:'public', table:'notifications', filter:`user_id=eq.${this.profile.id}` },
+          p => { this.notifications.unshift(p.new); this.toastShow(p.new.title); })
+        .on('postgres_changes', { event:'*', schema:'public', table:'projects' }, () => this.reloadProjects())
+        .on('postgres_changes', { event:'*', schema:'public', table:'actions' }, () => this.reloadActions())
+        .on('postgres_changes', { event:'*', schema:'public', table:'approval_requests' }, () => this.reloadApprovals())
+        .on('postgres_changes', { event:'*', schema:'public', table:'attachments' }, () => this.reloadAttachments())
+        .subscribe();
+    },
+
+    async reloadProjects() { const {data} = await this.sb.from('projects').select('*, project_members(user_id), project_responsibles(user_id)'); this.projects = data || []; },
+    async reloadActions()  { const {data} = await this.sb.from('actions').select('*, action_assignees(user_id)'); this.actions = data || []; },
+    async reloadApprovals() {
+      const {data} = await this.sb.from('approval_requests')
+        .select('*, requester:profiles!approval_requests_requester_id_fkey(full_name,username)')
+        .eq('status','pending').order('created_at',{ascending:false});
+      this.approvals = data || [];
+    },
+    async reloadAttachments() {
+      const {data} = await this.sb.from('attachments').select('*').order('created_at',{ascending:true});
+      this.attachments = data || [];
+    },
+
+    refreshDashboard() {
+      this.sb.rpc('refresh_dashboard_summary').then(()=>{}).catch(e => console.warn('MV:', e.message));
+    },
+
+    // ===== AUTH =====
+    async doLogin() {
+      this.auth.busy = true; this.auth.err = null;
+      try {
+        let email = this.auth.identifier.trim();
+        if (!email.includes('@')) {
+          const { data, error } = await this.sb.rpc('email_for_username', { uname: email });
+          if (error) throw error;
+          if (!data) throw new Error('Usuário não encontrado.');
+          email = data;
+        }
+        const { error } = await this.sb.auth.signInWithPassword({ email, password: this.auth.password });
+        if (error) throw error;
+      } catch (e) { this.auth.err = e.message || 'Falha no login'; }
+      finally { this.auth.busy = false; }
+    },
+
+    async doLogout() { await this.sb.auth.signOut(); this.session = null; this.profile = null; },
+
+    openChangePasswordModal() {
+      this.cpf = { password: '', confirm: '', err: null, busy: false };
+      this.modal = { type: 'changePassword' };
+    },
+
+    async changeMyPassword() {
+      this.cpf.err = null;
+      if (this.cpf.password.length < 6) { this.cpf.err = 'A senha precisa ter pelo menos 6 caracteres.'; return; }
+      if (this.cpf.password !== this.cpf.confirm) { this.cpf.err = 'As senhas não coincidem.'; return; }
+      this.cpf.busy = true;
+      try {
+        const { error } = await this.sb.auth.updateUser({ password: this.cpf.password });
+        if (error) throw error;
+        this.logActivity('auth.password_changed', 'user', this.profile.id, 'Alterou a própria senha');
+        this.modal = null;
+        this.toastShow('Senha alterada. Faça login novamente.');
+        // Desloga após pequeno delay para o toast ser visto
+        setTimeout(() => this.doLogout(), 1500);
+      } catch (e) {
+        this.cpf.err = e.message || 'Falha ao alterar senha';
+      } finally {
+        this.cpf.busy = false;
+      }
+    },
+
+    // ===== PROJETOS =====
+    openProjectModal(id) {
+      const p = id ? this.projectById(id) : null;
+      this.pf = p
+        ? { ...p,
+            members: (p.project_members || []).map(m => m.user_id),
+            responsibles: (p.project_responsibles || []).map(r => r.user_id) }
+        : { name:'', description:'', start_date:'', end_date:'',
+            responsibles:[], members:[], image_url:'', image_uploaded_by: null };
+      this.modal = { type:'project', editId: id || null };
+    },
+
+    async saveProject() {
+      const data = {
+        name: (this.pf.name || '').trim(),
+        description: this.pf.description || null,
+        start_date: this.pf.start_date || null,
+        end_date: this.pf.end_date || null,
+        image_url: this.pf.image_url || null,
+        image_uploaded_by: this.pf.image_uploaded_by || null
+      };
+      if (!data.name) return this.toastShow('Informe o nome','error');
+      if (data.start_date && data.end_date && data.start_date > data.end_date) return this.toastShow('Data fim antes do início','error');
+
+      const responsibles = this.pf.responsibles || [];
+      const members      = this.pf.members      || [];
+
+      try {
+        if (this.modal.editId) {
+          const { error } = await this.sb.from('projects').update(data).eq('id', this.modal.editId);
+          if (error) throw error;
+          // Members
+          if (this.isAdmin) {
+            await this.sb.from('project_members').delete().eq('project_id', this.modal.editId);
+            if (members.length) {
+              await this.sb.from('project_members').insert(members.map(uid => ({ project_id: this.modal.editId, user_id: uid })));
+            }
+          } else {
+            const current = new Set((this.projectById(this.modal.editId)?.project_members || []).map(m => m.user_id));
+            const toAdd = members.filter(uid => !current.has(uid));
+            if (toAdd.length) {
+              await this.sb.from('project_members').insert(toAdd.map(uid => ({ project_id: this.modal.editId, user_id: uid })));
+            }
+          }
+          // Responsibles
+          if (this.isAdmin) {
+            await this.sb.from('project_responsibles').delete().eq('project_id', this.modal.editId);
+            if (responsibles.length) {
+              await this.sb.from('project_responsibles').insert(responsibles.map(uid => ({ project_id: this.modal.editId, user_id: uid })));
+            }
+          } else {
+            const current = new Set((this.projectById(this.modal.editId)?.project_responsibles || []).map(r => r.user_id));
+            const toAdd = responsibles.filter(uid => !current.has(uid));
+            if (toAdd.length) {
+              await this.sb.from('project_responsibles').insert(toAdd.map(uid => ({ project_id: this.modal.editId, user_id: uid })));
+            }
+          }
+          this.toastShow('Projeto atualizado');
+        } else {
+          data.created_by = this.profile.id;
+          data.position = (Math.max(0, ...this.projects.map(p => p.position || 0))) + 1;
+          const { data: ins, error } = await this.sb.from('projects').insert(data).select().single();
+          if (error) throw error;
+          // O criador já vira member via trigger; insere os outros
+          const extraMembers = members.filter(uid => uid !== this.profile.id);
+          if (extraMembers.length) {
+            await this.sb.from('project_members').insert(extraMembers.map(uid => ({ project_id: ins.id, user_id: uid })));
+          }
+          if (responsibles.length) {
+            await this.sb.from('project_responsibles').insert(responsibles.map(uid => ({ project_id: ins.id, user_id: uid })));
+          }
+          this.toastShow('Projeto criado');
+        }
+        await this.reloadProjects();
+        this.refreshDashboard();
+        this.modal = null;
+      } catch (e) {
+        this.toastShow(e.message || 'Falha ao salvar', 'error');
+      }
+    },
+
+    deleteProjectAsk(id) {
+      const proj = this.projectById(id);
+      this.confirmAsk('Excluir projeto?', 'Todas as ações associadas serão removidas.', async () => {
+        const { error } = await this.sb.from('projects').delete().eq('id', id);
+        if (error) return this.toastShow(error.message,'error');
+        this.refreshDashboard();
+        this.toastShow('Projeto excluído');
+      });
+    },
+
+    async toggleProjectComplete(p) {
+      const newStatus = p.status === 'completed' ? 'active' : 'completed';
+
+      // Admin aplica direto. Não-admin pode reabrir direto, mas concluir → homologação.
+      if (this.isAdmin || newStatus !== 'completed') {
+        const { error } = await this.sb.from('projects').update({ status: newStatus }).eq('id', p.id);
+        if (error) return this.toastShow(error.message,'error');
+        p.status = newStatus;
+        this.refreshDashboard();
+        if (newStatus === 'completed') {
+        } else {
+        }
+        return;
+      }
+
+      // Não-admin querendo marcar projeto como concluído: homologação
+      this.confirmAsk(
+        'Solicitar conclusão do projeto?',
+        'A conclusão do projeto precisa ser homologada por um administrador.',
+        async () => {
+          const { error } = await this.sb.from('approval_requests').insert({
+            requester_id: this.profile.id,
+            kind: 'update',
+            entity_type: 'project_complete',
+            payload: {
+              project_id: p.id,
+              project_name: p.name,
+              target_status: 'completed'
+            }
+          });
+          if (error) return this.toastShow(error.message,'error');
+          this.toastShow('Solicitação enviada para homologação');
+        }
+      );
+    },
+
+    // ===== AÇÕES =====
+    openActionModal(actionId, projectId) {
+      const a = actionId ? this.actions.find(x => x.id === actionId) : null;
+      this.af = a
+        ? { ...a, assignees: (a.action_assignees || []).map(x => x.user_id) }
+        : { project_id: projectId || (this.projects[0]?.id || ''), title:'', description:'', start_date:'', end_date:'', status:'todo', responsible_id:'', assignees:[], image_url:'', image_uploaded_by: null };
+      this.modal = { type:'action', editId: actionId || null };
+    },
+
+    async saveAction() {
+      const proj = this.projectById(this.af.project_id);
+      if (!proj) return this.toastShow('Selecione um projeto','error');
+
+      // Detecta se um não-admin está tentando marcar status='done' diretamente pelo formulário.
+      // Nesse caso, não salvamos como 'done': salvamos com o status anterior (ou 'todo') e
+      // abrimos uma solicitação de homologação para a conclusão.
+      const isCompletingViaForm = this.af.status === 'done' && !this.isAdmin;
+      const existing = this.modal.editId ? this.actionById(this.modal.editId) : null;
+      const wasAlreadyDone = existing && existing.status === 'done';
+      let pendingCompletion = false;
+      let effectiveStatus = this.af.status || 'todo';
+      if (isCompletingViaForm && !wasAlreadyDone) {
+        // Mantém o status anterior (ou 'todo' se for criação) e marca para abrir homologação depois
+        effectiveStatus = existing ? existing.status : 'todo';
+        pendingCompletion = true;
+      }
+
+      const data = {
+        project_id: this.af.project_id,
+        title: (this.af.title || '').trim(),
+        description: this.af.description || null,
+        start_date: this.af.start_date || null,
+        end_date: this.af.end_date || null,
+        status: effectiveStatus,
+        responsible_id: this.af.responsible_id || null,
+        image_url: this.af.image_url || null,
+        image_uploaded_by: this.af.image_uploaded_by || null
+      };
+      if (!data.title) return this.toastShow('Informe o título','error');
+      if (proj.end_date && data.end_date && data.end_date > proj.end_date) return this.toastShow('Prazo da ação ultrapassa o do projeto','error');
+      if (proj.start_date && data.start_date && data.start_date < proj.start_date) return this.toastShow('Início da ação antes do projeto','error');
+      if (data.start_date && data.end_date && data.start_date > data.end_date) return this.toastShow('Datas invertidas','error');
+
+      try {
+        let savedActionId = this.modal.editId;
+        if (this.modal.editId) {
+          const { error } = await this.sb.from('actions').update(data).eq('id', this.modal.editId);
+          if (error) throw error;
+          await this.sb.from('action_assignees').delete().eq('action_id', this.modal.editId);
+          if (this.af.assignees?.length) {
+            await this.sb.from('action_assignees').insert(this.af.assignees.map(uid => ({ action_id: this.modal.editId, user_id: uid })));
+          }
+          this.toastShow('Ação atualizada');
+        } else {
+          data.created_by = this.profile.id;
+          const projActions = this.actions.filter(a => a.project_id === data.project_id);
+          data.position = (Math.max(0, ...projActions.map(a => a.position || 0))) + 1;
+          const { data: ins, error } = await this.sb.from('actions').insert(data).select().single();
+          if (error) throw error;
+          savedActionId = ins.id;
+          if (this.af.assignees?.length) {
+            await this.sb.from('action_assignees').insert(this.af.assignees.map(uid => ({ action_id: ins.id, user_id: uid })));
+          }
+          this.toastShow('Ação criada');
+        }
+
+        // Se o não-admin quis marcar como concluída pelo formulário, abre homologação
+        if (pendingCompletion && savedActionId) {
+          await this.sb.from('approval_requests').insert({
+            requester_id: this.profile.id,
+            kind: 'update',
+            entity_type: 'action_complete',
+            payload: {
+              action_id: savedActionId,
+              action_title: data.title,
+              project_id: data.project_id,
+              project_name: proj?.name || null,
+              target_status: 'done'
+            }
+          });
+          this.toastShow('Conclusão enviada para homologação', 'info');
+        }
+
+        await this.reloadActions();
+        this.refreshDashboard();
+        this.modal = null;
+      } catch (e) {
+        this.toastShow(e.message || 'Falha ao salvar', 'error');
+      }
+    },
+
+    deleteActionAsk(id) {
+      const a = this.actionById(id);
+      this.confirmAsk('Excluir ação?', null, async () => {
+        const { error } = await this.sb.from('actions').delete().eq('id', id);
+        if (error) return this.toastShow(error.message,'error');
+        await this.reloadActions();
+        this.toastShow('Ação excluída');
+      });
+    },
+
+    async toggleActionDone(a) {
+      const newStatus = a.status === 'done' ? 'todo' : 'done';
+
+      // Admin: aplica direto. Não-admin: aplica direto SE for sair de done (correção),
+      // mas precisa homologação para MARCAR como done.
+      if (this.isAdmin || newStatus !== 'done') {
+        const { error } = await this.sb.from('actions').update({ status: newStatus }).eq('id', a.id);
+        if (error) return this.toastShow(error.message,'error');
+        a.status = newStatus;
+        const proj = this.projectById(a.project_id);
+        if (newStatus === 'done') {
+        } else {
+        }
+        return;
+      }
+
+      // Não-admin marcando como concluída: exige homologação
+      this.confirmAsk(
+        'Solicitar conclusão da ação?',
+        'A conclusão precisa ser homologada por um administrador. Você receberá uma confirmação quando for analisada.',
+        async () => {
+          const proj = this.projectById(a.project_id);
+          const { error } = await this.sb.from('approval_requests').insert({
+            requester_id: this.profile.id,
+            kind: 'update',
+            entity_type: 'action_complete',
+            payload: {
+              action_id: a.id,
+              action_title: a.title,
+              project_id: a.project_id,
+              project_name: proj?.name || null,
+              target_status: 'done'
+            }
+          });
+          if (error) return this.toastShow(error.message,'error');
+          this.toastShow('Solicitação enviada para homologação');
+        }
+      );
+    },
+
+    async reorderActions(projectId, orderedIds) {
+      orderedIds.forEach((id, idx) => {
+        const a = this.actions.find(x => x.id === id);
+        if (a) a.position = idx + 1;
+      });
+      await Promise.all(orderedIds.map((id, idx) =>
+        this.sb.from('actions').update({ position: idx + 1 }).eq('id', id)
+      ));
+    },
+
+    // ===== APROVAÇÕES =====
+    async approveRequest(id, decision) {
+      const a = this.approvals.find(x => x.id === id);
+      if (!a) return;
+
+      let note = '';
+      if (decision === 'rejected') {
+        note = prompt('Motivo da rejeição (opcional):') || '';
+      }
+
+      try {
+        // ----- Anexo: exclusão -----
+        if (a.entity_type === 'attachment' && a.kind === 'delete') {
+          if (decision === 'approved') {
+            if (a.payload?.storage_path) {
+              try { await this.sb.storage.from('attachments').remove([a.payload.storage_path]); } catch(_) {}
+            }
+            if (a.payload?.attachment_id) {
+              const { error } = await this.sb.from('attachments').delete().eq('id', a.payload.attachment_id);
+              if (error) throw error;
+            }
+          }
+          await this.markApprovalDone(id, decision, note);
+
+        // ----- Imagem de capa: remoção -----
+        } else if (a.entity_type === 'cover_image' && a.kind === 'delete') {
+          if (decision === 'approved') {
+            const tbl = a.payload?.target_type === 'project' ? 'projects' : 'actions';
+            if (a.payload?.target_id) {
+              const { error } = await this.sb.from(tbl)
+                .update({ image_url: null, image_uploaded_by: null })
+                .eq('id', a.payload.target_id);
+              if (error) throw error;
+            }
+          }
+          await this.markApprovalDone(id, decision, note);
+
+        // ----- Conclusão de ação -----
+        } else if (a.entity_type === 'action_complete' && a.kind === 'update') {
+          if (decision === 'approved' && a.payload?.action_id) {
+            const target = a.payload.target_status || 'done';
+            const { error } = await this.sb.from('actions')
+              .update({ status: target })
+              .eq('id', a.payload.action_id);
+            if (error) throw error;
+          }
+          await this.markApprovalDone(id, decision, note);
+
+        // ----- Conclusão de projeto -----
+        } else if (a.entity_type === 'project_complete' && a.kind === 'update') {
+          if (decision === 'approved' && a.payload?.project_id) {
+            const target = a.payload.target_status || 'completed';
+            const { error } = await this.sb.from('projects')
+              .update({ status: target })
+              .eq('id', a.payload.project_id);
+            if (error) throw error;
+          }
+          await this.markApprovalDone(id, decision, note);
+
+        // ----- Demais tipos: usa RPC apply_approval -----
+        } else {
+          const { error } = await this.sb.rpc('apply_approval', { approval_id: id, decision, note });
+          if (error) throw error;
+        }
+
+        // Log da decisão
+        const requesterName = a.requester?.full_name || a.requester?.username || '—';
+        const what = this.entityLabel(a.entity_type);
+        if (decision === 'approved') {
+        } else {
+        }
+
+        await this.reloadApprovals();
+        await this.reloadAttachments();
+        await this.reloadProjects();
+        await this.reloadActions();
+        this.refreshDashboard();
+        this.toastShow(decision === 'approved' ? 'Aprovado' : 'Rejeitado');
+      } catch (e) {
+        this.toastShow(e.message || 'Falha ao processar', 'error');
+      }
+    },
+
+    async markApprovalDone(id, decision, note) {
+      const { error } = await this.sb.from('approval_requests').update({
+        status: decision,
+        reviewer_id: this.profile.id,
+        review_note: note || null,
+        reviewed_at: new Date().toISOString()
+      }).eq('id', id);
+      if (error) throw error;
+    },
+
+    // ===== LOGS DE ATIVIDADE =====
+    // Helper fire-and-forget: registra uma ação do usuário. Nunca falha visivelmente.
+    async logActivity(action, entityType, entityId, description, metadata) {
+      if (!this.profile) return;
+      try {
+        await this.sb.from('activity_logs').insert({
+          user_id: this.profile.id,
+          user_name: this.profile.full_name || this.profile.username || null,
+          action,
+          entity_type: entityType || null,
+          entity_id: entityId || null,
+          description: description || action,
+          metadata: metadata || null
+        });
+      } catch (e) {
+        console.warn('logActivity falhou (ignorado):', e.message);
+      }
+    },
+
+    // Carrega os logs visíveis (somente admin recebe registros via RLS).
+    // Aplica filtros do painel. Limita a 200 por carga.
+    async loadLogs(append = false) {
+      if (!this.isAdmin) { this.logs = []; return; }
+      this.logsLoading = true;
+      try {
+        let q = this.sb.from('activity_logs').select('*').order('created_at',{ascending:false}).limit(200);
+        if (this.logFilters.user_id)     q = q.eq('user_id', this.logFilters.user_id);
+        if (this.logFilters.action_type) q = q.like('action', this.logFilters.action_type + '%');
+        if (this.logFilters.date_from)   q = q.gte('created_at', this.logFilters.date_from + 'T00:00:00');
+        if (this.logFilters.date_to)     q = q.lte('created_at', this.logFilters.date_to + 'T23:59:59');
+        if (append && this.logs.length) {
+          const oldest = this.logs[this.logs.length - 1].created_at;
+          q = q.lt('created_at', oldest);
+        }
+        const { data, error } = await q;
+        if (error) throw error;
+        this.logs = append ? [...this.logs, ...(data||[])] : (data || []);
+        this.logsHasMore = (data || []).length === 200;
+      } catch (e) {
+        this.toastShow('Falha ao carregar logs: ' + e.message, 'error');
+      } finally {
+        this.logsLoading = false;
+      }
+    },
+
+    clearLogFilters() {
+      this.logFilters = { user_id: '', action_type: '', date_from: '', date_to: '' };
+      this.loadLogs(false);
+    },
+
+    // Mapeia prefixos de action a um label amigável
+    actionGroupLabel(action) {
+      if (!action) return '';
+      const m = {
+        'project.created':            'Criou projeto',
+        'project.updated':            'Alterou projeto',
+        'project.deleted':            'Excluiu projeto',
+        'project.completed':          'Concluiu projeto',
+        'project.reopened':           'Reabriu projeto',
+        'project.completion_requested':'Solicitou conclusão de projeto',
+        'project.priority_changed':   'Reordenou prioridades de projetos',
+        'action.created':             'Criou ação',
+        'action.updated':             'Alterou ação',
+        'action.deleted':             'Excluiu ação',
+        'action.completed':           'Concluiu ação',
+        'action.uncompleted':         'Reabriu ação',
+        'action.completion_requested':'Solicitou conclusão de ação',
+        'action.moved':               'Moveu ação entre projetos',
+        'action.priority_changed':    'Reordenou prioridades de ações',
+        'attachment.uploaded':        'Anexou arquivo',
+        'attachment.deleted':         'Excluiu anexo',
+        'attachment.deletion_requested':'Solicitou exclusão de anexo',
+        'cover_image.uploaded':       'Adicionou imagem de capa',
+        'cover_image.removed':        'Removeu imagem de capa',
+        'cover_image.removal_requested':'Solicitou remoção de capa',
+        'user.created':               'Criou usuário',
+        'user.updated':               'Alterou usuário',
+        'user.deleted':               'Excluiu usuário',
+        'vacation.added':             'Cadastrou férias',
+        'vacation.deleted':           'Excluiu férias',
+        'holiday.added':              'Adicionou feriado',
+        'holiday.updated':            'Alterou feriado',
+        'holiday.deleted':            'Excluiu feriado',
+        'approval.approved':          'Aprovou solicitação',
+        'approval.rejected':          'Rejeitou solicitação',
+        'auth.password_changed':      'Alterou própria senha'
+      };
+      return m[action] || action;
+    },
+
+    // ===== USUÁRIOS / FÉRIAS =====
+    async callAdminUsers(action, payload) {
+      const { data, error } = await this.sb.functions.invoke('admin-users', { body: { action, payload } });
+      if (error) {
+        // tenta extrair mensagem do corpo da resposta
+        try {
+          const ctx = error.context && error.context.json ? await error.context.json() : null;
+          if (ctx?.error) throw new Error(ctx.error);
+        } catch (_) {}
+        throw error;
+      }
+      if (data && data.error) throw new Error(data.error);
+      return data;
+    },
+
+    openUserModal(userId) {
+      const u = userId ? this.profileById(userId) : null;
+      this.uf = u
+        ? { id: u.id, full_name: u.full_name || '', username: u.username || '',
+            email: u.email || '', role: u.role || 'user', password: '', err:null, busy:false }
+        : { id: null, full_name: '', username: '', email: '', role: 'user', password: '', err:null, busy:false };
+      this.modal = { type: 'user', editId: userId || null };
+    },
+
+    async saveUser() {
+      this.uf.err = null;
+      this.uf.busy = true;
+      try {
+        if (!/^[a-zA-Z0-9_.\-]{3,30}$/.test(this.uf.username)) {
+          throw new Error('Usuário deve ter 3 a 30 caracteres alfanuméricos.');
+        }
+        if (this.modal.editId) {
+          const payload = {
+            user_id: this.uf.id,
+            email: this.uf.email,
+            username: this.uf.username,
+            full_name: this.uf.full_name,
+            role: this.uf.role
+          };
+          if (this.uf.password) payload.password = this.uf.password;
+          await this.callAdminUsers('update', payload);
+          this.toastShow('Usuário atualizado');
+        } else {
+          const created = await this.callAdminUsers('create', {
+            email: this.uf.email,
+            password: this.uf.password,
+            username: this.uf.username,
+            full_name: this.uf.full_name,
+            role: this.uf.role
+          });
+          this.toastShow('Usuário criado');
+        }
+        // recarrega lista
+        const { data } = await this.sb.from('profiles').select('*').order('full_name',{ascending:true});
+        this.profiles = data || [];
+        this.modal = null;
+      } catch (e) {
+        this.uf.err = e.message || 'Falha ao salvar';
+      } finally {
+        this.uf.busy = false;
+      }
+    },
+
+    deleteUserAsk(u) {
+      if (u.id === this.profile.id) return this.toastShow('Você não pode excluir você mesmo','error');
+      this.confirmAsk(`Excluir ${u.full_name || u.username}?`,
+        'Esta ação remove o usuário em definitivo, junto com seu acesso.',
+        async () => {
+          try {
+            await this.callAdminUsers('delete', { user_id: u.id });
+            this.profiles = this.profiles.filter(x => x.id !== u.id);
+            this.toastShow('Usuário excluído');
+          } catch (e) { this.toastShow(e.message || 'Falha ao excluir','error'); }
+        });
+    },
+
+    // ===== FERIADOS =====
+    openHolidayModal(h) {
+      this.hf = h
+        ? { id: h.id, name: h.name, date: h.date, err:null, busy:false }
+        : { id: null, name: '', date: '', err:null, busy:false };
+      this.modal = { type: 'holiday', editId: h?.id || null };
+    },
+
+    async saveHoliday() {
+      this.hf.err = null;
+      this.hf.busy = true;
+      try {
+        const data = { name: this.hf.name, date: this.hf.date };
+        if (this.modal.editId) {
+          const { error } = await this.sb.from('holidays').update(data).eq('id', this.hf.id);
+          if (error) throw error;
+        } else {
+          const { data: ins, error } = await this.sb.from('holidays').insert(data).select().single();
+          if (error) throw error;
+        }
+        const { data: hs } = await this.sb.from('holidays').select('*').order('date',{ascending:true});
+        this.holidays = hs || [];
+        this.holidaysSet = new Set(this.holidays.map(h => h.date));
+        this.toastShow(this.modal.editId ? 'Feriado atualizado' : 'Feriado adicionado');
+        this.modal = null;
+      } catch (e) {
+        this.hf.err = e.message || 'Falha ao salvar';
+      } finally {
+        this.hf.busy = false;
+      }
+    },
+
+    deleteHolidayAsk(h) {
+      this.confirmAsk(`Excluir ${h.name}?`, `Feriado de ${this.fmtDate(h.date)}.`, async () => {
+        const { error } = await this.sb.from('holidays').delete().eq('id', h.id);
+        if (error) return this.toastShow(error.message, 'error');
+        this.holidays = this.holidays.filter(x => x.id !== h.id);
+        this.holidaysSet = new Set(this.holidays.map(x => x.date));
+        this.toastShow('Feriado excluído');
+      });
+    },
+
+    openVacationModal(u) {
+      this.vf = { userId: u.id, name: u.full_name || u.username, start: '', end: '', err: null, busy: false };
+      this.modal = { type:'vacation' };
+    },
+
+    async addVacation() {
+      this.vf.err = null;
+      if (!this.vf.start || !this.vf.end) { this.vf.err = 'Informe o período completo.'; return; }
+      if (this.vf.start > this.vf.end)    { this.vf.err = 'Data de início após o término.'; return; }
+      this.vf.busy = true;
+      try {
+        const { data: ins, error } = await this.sb.from('vacations').insert({
+          user_id: this.vf.userId, start_date: this.vf.start, end_date: this.vf.end
+        }).select().single();
+        if (error) throw error;
+        const { data } = await this.sb.from('vacations').select('*').order('start_date',{ascending:true});
+        this.vacations = data || [];
+        const userName = this.profileById(this.vf.userId)?.full_name || this.vf.name || '—';
+        this.vf.start = ''; this.vf.end = '';
+        this.toastShow('Férias adicionadas');
+      } catch (e) { this.vf.err = e.message || 'Falha ao salvar'; }
+      finally { this.vf.busy = false; }
+    },
+
+    deleteVacationAsk(v) {
+      this.confirmAsk('Excluir período de férias?',
+        `${this.fmtDate(v.start_date)} → ${this.fmtDate(v.end_date)}`,
+        async () => {
+          const { error } = await this.sb.from('vacations').delete().eq('id', v.id);
+          if (error) return this.toastShow(error.message,'error');
+          this.vacations = this.vacations.filter(x => x.id !== v.id);
+          const userName = this.profileById(v.user_id)?.full_name || '—';
+          this.toastShow('Férias excluídas');
+        });
+    },
+
+    vacationsOf(uid) {
+      return this.vacations.filter(v => v.user_id === uid).sort((a,b) => a.start_date.localeCompare(b.start_date));
+    },
+
+    // ===== UPLOAD (capa + anexos) =====
+    async uploadFile(file, kind, opts = {}) {
+      // kind: 'projects' | 'actions' (organização no Storage)
+      if (!file) return null;
+      if (file.size > MAX_FILE_SIZE) {
+        this.toastShow('Arquivo excede 10 MB', 'error');
+        return null;
+      }
+      if (opts.imageOnly && !(file.type || '').startsWith('image/')) {
+        this.toastShow('Selecione uma imagem', 'error');
+        return null;
+      }
+      const safeName = (file.name || 'arquivo').replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      const path = `${kind}/${this.profile.id}/${Date.now()}-${safeName}`;
+      const { error } = await this.sb.storage.from('attachments').upload(path, file, { upsert: false });
+      if (error) { this.toastShow(error.message, 'error'); return null; }
+      const { data } = this.sb.storage.from('attachments').getPublicUrl(path);
+      return {
+        url: data.publicUrl,
+        path,
+        name: file.name,
+        type: file.type || null,
+        size: file.size
+      };
+    },
+
+    // Upload de imagem de capa (project ou action)
+    async onCoverImage(e, target) {
+      const file = e.target.files?.[0]; if (!file) return;
+      const uploaded = await this.uploadFile(file, target === 'project' ? 'projects' : 'actions', { imageOnly: true });
+      e.target.value = '';
+      if (!uploaded) return;
+      if (target === 'project') {
+        this.pf.image_url = uploaded.url;
+        this.pf.image_uploaded_by = this.profile.id;
+        this.pf.image_storage_path = uploaded.path;
+      } else {
+        this.af.image_url = uploaded.url;
+        this.af.image_uploaded_by = this.profile.id;
+        this.af.image_storage_path = uploaded.path;
+      }
+      // Log apenas se for editando algo já existente; em criação,
+      // será registrado junto com o "criou".
+      if (this.modal?.editId) {
+        const ent = target === 'project' ? 'project' : 'action';
+      }
+    },
+
+    // Remoção de imagem de capa — homologação se não for do dono
+    async removeCoverAsk(target) {
+      const isProject = target === 'project';
+      const editId = this.modal?.editId;
+      const form = isProject ? this.pf : this.af;
+
+      // Sem editId: é uma criação nova — apenas limpa o campo localmente
+      if (!editId) {
+        form.image_url = '';
+        form.image_uploaded_by = null;
+        return;
+      }
+
+      const current = isProject ? this.projectById(editId) : this.actionById(editId);
+      if (!current) return;
+      const uploader = current.image_uploaded_by;
+      const canRemoveDirect = !uploader || uploader === this.profile.id || this.isAdmin;
+
+      if (canRemoveDirect) {
+        this.confirmAsk('Remover imagem de capa?', null, async () => {
+          const table = isProject ? 'projects' : 'actions';
+          const { error } = await this.sb.from(table)
+            .update({ image_url: null, image_uploaded_by: null })
+            .eq('id', editId);
+          if (error) return this.toastShow(error.message, 'error');
+          form.image_url = '';
+          form.image_uploaded_by = null;
+          current.image_url = null;
+          current.image_uploaded_by = null;
+          this.toastShow('Imagem removida');
+        });
+      } else {
+        this.confirmAsk(
+          'Solicitar remoção da imagem?',
+          `A imagem foi enviada por ${this.profileById(uploader)?.full_name || 'outro usuário'}. A remoção precisa de aprovação do administrador.`,
+          async () => {
+            const { error } = await this.sb.from('approval_requests').insert({
+              requester_id: this.profile.id,
+              kind: 'delete',
+              entity_type: 'cover_image',
+              payload: {
+                target_type: target,
+                target_id: editId,
+                image_url: current.image_url,
+                uploaded_by: uploader
+              }
+            });
+            if (error) return this.toastShow(error.message, 'error');
+            this.toastShow('Solicitação enviada para homologação');
+          }
+        );
+      }
+    },
+
+    // ===== ANEXOS (múltiplos arquivos) =====
+    async onProjectAttachment(e) {
+      const file = e.target.files?.[0]; if (!file) return;
+      if (!this.modal?.editId) { e.target.value = ''; return; }
+      this.attachUploading = true;
+      try {
+        await this.addAttachment(file, 'project', this.modal.editId);
+      } finally {
+        this.attachUploading = false;
+        e.target.value = '';
+      }
+    },
+
+    async onActionAttachment(e) {
+      const file = e.target.files?.[0]; if (!file) return;
+      if (!this.modal?.editId) { e.target.value = ''; return; }
+      this.attachUploading = true;
+      try {
+        await this.addAttachment(file, 'action', this.modal.editId);
+      } finally {
+        this.attachUploading = false;
+        e.target.value = '';
+      }
+    },
+
+    async addAttachment(file, parentType, parentId) {
+      const uploaded = await this.uploadFile(file, parentType === 'project' ? 'projects' : 'actions');
+      if (!uploaded) return;
+      const record = {
+        file_url: uploaded.url,
+        file_name: uploaded.name,
+        file_type: uploaded.type,
+        file_size: uploaded.size,
+        storage_path: uploaded.path,
+        uploaded_by: this.profile.id
+      };
+      if (parentType === 'project') record.project_id = parentId;
+      else record.action_id = parentId;
+
+      const { data, error } = await this.sb.from('attachments').insert(record).select().single();
+      if (error) {
+        // Tenta apagar o arquivo do Storage para não deixar lixo
+        try { await this.sb.storage.from('attachments').remove([uploaded.path]); } catch(_) {}
+        return this.toastShow(error.message, 'error');
+      }
+      this.attachments.push(data);
+      // Log
+      const parent = parentType === 'project' ? this.projectById(parentId) : this.actionById(parentId);
+      const parentLabel = parent?.name || parent?.title || parentId;
+      this.toastShow('Arquivo anexado');
+    },
+
+    deleteAttachmentAsk(att) {
+      const canRemoveDirect = att.uploaded_by === this.profile.id || this.isAdmin;
+      if (canRemoveDirect) {
+        this.confirmAsk('Excluir arquivo?', att.file_name, async () => {
+          // Apaga do Storage primeiro
+          if (att.storage_path) {
+            try { await this.sb.storage.from('attachments').remove([att.storage_path]); } catch(_) {}
+          }
+          const { error } = await this.sb.from('attachments').delete().eq('id', att.id);
+          if (error) return this.toastShow(error.message, 'error');
+          this.attachments = this.attachments.filter(x => x.id !== att.id);
+          this.toastShow('Arquivo excluído');
+        });
+      } else {
+        const uploaderName = this.profileById(att.uploaded_by)?.full_name || 'outro usuário';
+        this.confirmAsk(
+          'Solicitar exclusão deste arquivo?',
+          `O arquivo "${att.file_name}" foi enviado por ${uploaderName}. A exclusão precisa de aprovação do administrador.`,
+          async () => {
+            const { error } = await this.sb.from('approval_requests').insert({
+              requester_id: this.profile.id,
+              kind: 'delete',
+              entity_type: 'attachment',
+              payload: {
+                attachment_id: att.id,
+                file_name: att.file_name,
+                file_url: att.file_url,
+                file_type: att.file_type,
+                storage_path: att.storage_path,
+                uploaded_by: att.uploaded_by,
+                project_id: att.project_id,
+                action_id: att.action_id
+              }
+            });
+            if (error) return this.toastShow(error.message, 'error');
+            this.toastShow('Solicitação enviada para homologação');
+          }
+        );
+      }
+    },
+
+    // Compatibilidade reversa (caso algum lugar antigo ainda chame)
+    async uploadImage(file, kind) {
+      const r = await this.uploadFile(file, kind, { imageOnly: true });
+      return r ? r.url : null;
+    },
+    async onProjectImage(e) { return this.onCoverImage(e, 'project'); },
+    async onActionImage(e)  { return this.onCoverImage(e, 'action'); },
+
+    // ===== NOTIFICAÇÕES =====
+    async markAllRead() {
+      const ids = this.unreadNotifs.map(n => n.id);
+      if (!ids.length) return;
+      await this.sb.from('notifications').update({ read: true }).in('id', ids);
+      this.notifications.forEach(n => { if (ids.includes(n.id)) n.read = true; });
+    },
+
+    async markRead(n) {
+      if (n.read) return;
+      await this.sb.from('notifications').update({ read: true }).eq('id', n.id);
+      n.read = true;
+    },
+
+    // ===== UI HELPERS =====
+    toastShow(msg, type='info') {
+      this.toast = { msg, type };
+      const m = msg;
+      setTimeout(() => { if (this.toast?.msg === m) this.toast = null; }, 3000);
+    },
+
+    confirmAsk(title, message, onYes) {
+      this.confirmCfg = { title, message, onYes };
+    },
+
+    // ===== DRAG-AND-DROP =====
+    initPrioritySortable(el) {
+      if (el._sortable) el._sortable.destroy();
+      const self = this;
+      el._sortable = Sortable.create(el, {
+        animation: 150,
+        ghostClass: 'card-ghost',
+        chosenClass: 'card-chosen',
+        handle: '.drag-handle',
+        onEnd: async (evt) => {
+          // 1. Captura a nova ordem ANTES de reverter
+          const orderedIds = Array.from(el.querySelectorAll('[data-project-id]')).map(n => n.dataset.projectId);
+          // 2. Reverte o DOM ao estado anterior (desfaz o que o Sortable fez visualmente)
+          //    O Alpine vai reorganizar de novo com base no array que vamos atualizar.
+          const item = evt.item;
+          item.remove();
+          if (evt.oldIndex >= el.children.length) {
+            el.appendChild(item);
+          } else {
+            el.insertBefore(item, el.children[evt.oldIndex]);
+          }
+          // 3. Atualiza positions e reordena array reativo
+          await self.reorderProjects(orderedIds);
+        }
+      });
+    },
+
+    async reorderProjects(orderedIds) {
+      // Atualiza position dos objetos local
+      orderedIds.forEach((id, idx) => {
+        const p = this.projects.find(x => x.id === id);
+        if (p) p.position = idx + 1;
+      });
+      // Reordena array para o Alpine re-renderizar na ordem certa
+      this.projects = [...this.projects].sort((a,b) => (a.position||0) - (b.position||0));
+      // Persiste no banco
+      await Promise.all(orderedIds.map((id, idx) =>
+        this.sb.from('projects').update({ position: idx + 1 }).eq('id', id)
+      ));
+      this.toastShow('Prioridades atualizadas');
+    },
+
+    initPriorityActionsSortable(el, projectId) {
+      if (el._sortable) el._sortable.destroy();
+      const self = this;
+      el._sortable = Sortable.create(el, {
+        animation: 150,
+        ghostClass: 'card-ghost',
+        chosenClass: 'card-chosen',
+        handle: '.drag-handle',
+        onEnd: async (evt) => {
+          // 1. Captura nova ordem
+          const orderedIds = Array.from(el.querySelectorAll('[data-action-id]')).map(n => n.dataset.actionId);
+          // 2. Reverte o DOM ao estado anterior
+          const item = evt.item;
+          item.remove();
+          if (evt.oldIndex >= el.children.length) {
+            el.appendChild(item);
+          } else {
+            el.insertBefore(item, el.children[evt.oldIndex]);
+          }
+          // 3. Atualiza positions e reordena array reativo
+          orderedIds.forEach((id, idx) => {
+            const a = self.actions.find(x => x.id === id);
+            if (a) a.position = idx + 1;
+          });
+          self.actions = [...self.actions].sort((a,b) => {
+            if (a.project_id !== b.project_id) return 0;
+            return (a.position||0) - (b.position||0);
+          });
+          await Promise.all(orderedIds.map((id, idx) =>
+            self.sb.from('actions').update({ position: idx + 1 }).eq('id', id)
+          ));
+          self.toastShow('Prioridades das ações atualizadas');
+        }
+      });
+    },
+
+    initSortable(el, projectId) {
+      if (el._sortable) el._sortable.destroy();
+      const self = this;
+      el._sortable = Sortable.create(el, {
+        group: 'actions',
+        animation: 150,
+        ghostClass: 'card-ghost',
+        chosenClass: 'card-chosen',
+        onEnd: async (evt) => {
+          const newProjectId = evt.to.dataset.projectId;
+          const cardId = evt.item.dataset.actionId;
+          const newOrder = Array.from(evt.to.querySelectorAll('[data-action-id]')).map(n => n.dataset.actionId);
+          if (newProjectId !== projectId) {
+            const target = self.projectById(newProjectId);
+            const action = self.actions.find(a => a.id === cardId);
+            if (target && action) {
+              if (target.end_date && action.end_date && action.end_date > target.end_date) {
+                self.toastShow('Prazo da ação não cabe no projeto destino','error');
+                evt.from.appendChild(evt.item);
+                return;
+              }
+              await self.sb.from('actions').update({ project_id: newProjectId }).eq('id', cardId);
+              action.project_id = newProjectId;
+            }
+          }
+          await self.reorderActions(newProjectId, newOrder);
+        }
+      });
+    },
+
+    // ===== DATAS =====
+    fmtDate(d) {
+      if (!d) return '';
+      const [y,m,day] = d.split('-');
+      return `${day}/${m}/${y}`;
+    },
+    fmtDateRange(s, e) {
+      if (!s && !e) return 'Sem prazo';
+      if (s && e)   return `${this.fmtDate(s)} → ${this.fmtDate(e)}`;
+      return this.fmtDate(s || e);
+    },
+    daysUntil(d) {
+      if (!d) return null;
+      const target = new Date(d + 'T00:00:00');
+      const today  = new Date(); today.setHours(0,0,0,0);
+      return Math.round((target - today) / 86400000);
+    },
+    isOnVacation(uid) {
+      const today = new Date().toISOString().slice(0,10);
+      return this.vacations.some(v => v.user_id === uid && v.start_date <= today && today <= v.end_date);
+    }
+  };
+}
+</script>
+</body>
+</html>
